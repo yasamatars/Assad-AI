@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Login — Assad AI</title>
+<meta name="description" content="Log in to your Assad AI client portal to view your CRM dashboard.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #08090D;
+    --panel: #101219;
+    --panel-2: #15171F;
+    --line: #23252F;
+    --text: #F2F2F5;
+    --muted: #9497A6;
+    --violet: #8B5CF6;
+    --cyan: #22D3EE;
+    --amber: #FFB443;
+    --red: #FB7185;
+    --grad: linear-gradient(120deg, var(--violet), var(--cyan));
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    display:flex;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2{ font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  a{ color:inherit; text-decoration:none; }
+
+  .glow{ position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(600px 400px at 10% 0%, rgba(139,92,246,0.16), transparent 60%),
+      radial-gradient(700px 500px at 95% 90%, rgba(34,211,238,0.10), transparent 60%);
+  }
+
+  /* LEFT: brand / pitch panel */
+  .side{
+    flex:0 0 44%;
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:48px;
+    border-right:1px solid var(--line);
+    background: linear-gradient(180deg, rgba(139,92,246,0.05), transparent 40%);
+  }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Space Grotesk'; font-weight:700; font-size:18px; }
+  .logo-mark{ width:36px; height:36px; border-radius:8px; background:none; display:flex; align-items:center; justify-content:center; font-size:14px; color:#08090D; font-weight:700; }
+
+  .side-mid{ max-width:400px; }
+  .side-mid .eyebrow{ font-size:12.5px; color:var(--cyan); font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:16px; }
+  .side-mid h1{ font-size:32px; line-height:1.2; margin-bottom:16px; }
+  .side-mid p{ color:var(--muted); font-size:15px; }
+
+  .mini-crm{ border:1px solid var(--line); border-radius:14px; background:var(--panel); padding:18px; }
+  .mini-crm-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:11.5px; color:var(--muted); }
+  .mini-crm-top .live{ display:flex; align-items:center; gap:5px; color:var(--cyan); }
+  .mini-crm-top .p{ width:6px; height:6px; border-radius:50%; background:var(--cyan); animation:pulse 1.6s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+  .row{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .row:last-child{ border-bottom:none; }
+  .row span:last-child{ font-family:'JetBrains Mono'; color:var(--cyan); }
+
+  .side-foot{ font-size:12.5px; color:var(--muted); }
+
+  /* RIGHT: login form */
+  .main{ flex:1; display:flex; align-items:center; justify-content:center; padding:40px; }
+  .form-card{ width:100%; max-width:400px; }
+  .form-card h2{ font-size:28px; margin-bottom:8px; }
+  .form-card > p{ color:var(--muted); font-size:14.5px; margin-bottom:32px; }
+
+  .field{ margin-bottom:18px; }
+  label{ display:block; font-size:12.5px; color:var(--muted); margin-bottom:7px; }
+  input{
+    width:100%; background:#0C0D13; border:1px solid var(--line); border-radius:9px; padding:13px 14px;
+    color:var(--text); font-family:'Inter'; font-size:14.5px; outline:none; transition:border-color 0.2s ease;
+  }
+  input:focus{ border-color:var(--cyan); }
+  input.error{ border-color: var(--red); }
+
+  .row-between{ display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+  .remember{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--muted); cursor:pointer; user-select:none; }
+  .remember input{ width:15px; height:15px; accent-color: var(--cyan); cursor:pointer; }
+  .forgot{ font-size:13.5px; color:var(--cyan); }
+  .forgot:hover{ text-decoration:underline; }
+
+  .error-banner{
+    display:none; align-items:center; gap:8px; background:rgba(251,113,133,0.08); border:1px solid rgba(251,113,133,0.35);
+    color:var(--red); font-size:13px; padding:11px 14px; border-radius:9px; margin-bottom:18px;
+  }
+  .error-banner.show{ display:flex; }
+
+  .submit-btn{
+    width:100%; padding:14px; border:none; border-radius:10px; background:var(--grad);
+    color:#08090D; font-weight:700; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .submit-btn:hover{ filter:brightness(1.08); }
+  .submit-btn:disabled{ opacity:0.6; cursor:default; }
+  .spinner{ width:15px; height:15px; border:2px solid rgba(8,9,13,0.3); border-top-color:#08090D; border-radius:50%; display:none; animation:spin 0.7s linear infinite; }
+  .spinner.show{ display:inline-block; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .divider{ display:flex; align-items:center; gap:14px; margin:26px 0; color:var(--muted); font-size:12px; }
+  .divider::before, .divider::after{ content:''; flex:1; height:1px; background:var(--line); }
+
+  .footnote{ text-align:center; font-size:13.5px; color:var(--muted); }
+  .footnote a{ color:var(--cyan); }
+  .footnote a:hover{ text-decoration:underline; }
+
+  .back-link{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); margin-top:36px; }
+  .back-link:hover{ color:var(--text); }
+
+  @media (max-width: 880px){
+    .side{ display:none; }
+    .main{ padding:32px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<div class="side">
+  <a href="index.html" class="logo"><div class="logo-mark"><img src="Images/logo.png" alt="Assad AI logo" style="width:100%;height:100%;object-fit:contain;border-radius:8px;"></div>Assad AI</a>
+
+  <div class="side-mid">
+    <div class="eyebrow">Client Portal</div>
+    <h1>Your CRM, wherever you are.</h1>
+    <p style="margin-bottom:28px;">Log in to view live pipeline data, reports, and automations running behind your business.</p>
+
+    <div class="mini-crm">
+      <div class="mini-crm-top">
+        <span>Pipeline snapshot</span>
+        <span class="live"><span class="p"></span>Live</span>
+      </div>
+      <div class="row"><span>New leads</span><span>12</span></div>
+      <div class="row"><span>In progress</span><span>7</span></div>
+      <div class="row"><span>Closed this month</span><span>$48,200</span></div>
+    </div>
+  </div>
+
+  <div class="side-foot">© 2026 Assad AI. All rights reserved.</div>
+</div>
+
+<div class="main">
+  <div class="form-card">
+    <h2>Welcome back</h2>
+    <p>Log in to access your dashboard.</p>
+
+    <div class="error-banner" id="error-banner">⚠ Invalid email or password. Please try again.</div>
+
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input id="email" type="email" placeholder="you@company.com" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+
+      <div class="row-between">
+        <label class="remember"><input type="checkbox" id="remember"> Remember me</label>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">
+        <span class="spinner" id="spinner"></span>
+        <span id="btn-text">Log in</span>
+      </button>
+    </form>
+
+    <div class="divider">NEED ACCESS?</div>
+    <p class="footnote">Client accounts are set up by our team. If you don't have login details yet, <a href="index.html#contact">contact us</a>.</p>
+
+    <a href="index.html" class="back-link">← Back to homepage</a>
+  </div>
+</div>
+
+<script>
+  /*
+    Hook this up to your real auth backend:
+    replace the checkCredentials() function with a fetch() call to your
+    login API (e.g. POST /api/login with { email, password }).
+    On success -> redirect to your dashboard route.
+    On failure -> show the error banner (see showError()).
+  */
+
+  const form = document.getElementById('login-form');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const errorBanner = document.getElementById('error-banner');
+  const submitBtn = document.getElementById('submit-btn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btn-text');
+
+  function showError(message){
+    errorBanner.textContent = '⚠ ' + message;
+    errorBanner.classList.add('show');
+    emailInput.classList.add('error');
+    passwordInput.classList.add('error');
+  }
+
+  function clearError(){
+    errorBanner.classList.remove('show');
+    emailInput.classList.remove('error');
+    passwordInput.classList.remove('error');
+  }
+
+  // Placeholder — swap this out for a real API call to your backend
+  async function checkCredentials(email, password){
+    return new Promise(resolve=>{
+      setTimeout(()=>{
+        // TODO: replace with real backend check, e.g.:
+        // const res = await fetch('/api/login', { method:'POST', body: JSON.stringify({email,password}) });
+        // resolve(res.ok);
+        resolve(false); // demo always "fails" until wired to a backend
+      }, 900);
+    });
+  }
+
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    clearError();
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if(!email || !password){
+      showError('Please enter both your email and password.');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    spinner.classList.add('show');
+    btnText.textContent = 'Logging in…';
+
+    const success = await checkCredentials(email, password);
+
+    spinner.classList.remove('show');
+    submitBtn.disabled = false;
+
+    if(success){
+      btnText.textContent = 'Success ✓';
+      // window.location.href = '/dashboard'; // redirect once a real dashboard exists
+    } else {
+      btnText.textContent = 'Log in';
+      showError('This demo isn\'t connected to a backend yet — hook up checkCredentials() to your auth API.');
+    }
+  });
+
+</script>
+
+</body>
+</html>

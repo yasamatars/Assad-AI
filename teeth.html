@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teeth Dental Care — Dashboard | Assad AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #08090D;
+    --panel: #101219;
+    --panel-2: #15171F;
+    --line: #23252F;
+    --text: #F2F2F5;
+    --muted: #9497A6;
+    --violet: #3B82F6;
+    --cyan: #22D3EE;
+    --amber: #FFB443;
+    --rose: #FB7185;
+    --grad: linear-gradient(120deg, var(--violet), var(--cyan));
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{
+    background: var(--bg); color: var(--text); font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+  }
+  h1,h2,h3,h4{ font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  a{ color:inherit; }
+  .glow{ position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background: radial-gradient(600px 400px at 10% 0%, rgba(59,130,246,0.14), transparent 60%),
+                radial-gradient(700px 500px at 95% 10%, rgba(34,211,238,0.09), transparent 60%);
+  }
+
+  /* APP SHELL */
+  .app-shell{ display:flex; min-height:100vh; }
+
+  /* SIDEBAR */
+  .sidebar{
+    width:236px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--line);
+    display:flex; flex-direction:column; padding:20px 14px; position:sticky; top:0; height:100vh;
+  }
+  .brand{ display:flex; align-items:center; gap:11px; padding:6px 8px 22px; border-bottom:1px solid var(--line); margin-bottom:18px; }
+  .brand-mark{ width:34px; height:34px; border-radius:9px; background:var(--grad); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk'; font-weight:700; color:#08090D; font-size:14.5px; flex-shrink:0; }
+  .brand-name{ font-family:'Space Grotesk'; font-weight:700; font-size:14.5px; line-height:1.2; }
+  .brand-sub{ font-size:11px; color:var(--muted); }
+
+  .side-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); padding:0 10px; margin:14px 0 8px; }
+  .side-label:first-of-type{ margin-top:0; }
+  .side-nav{ display:flex; flex-direction:column; gap:2px; }
+  .side-item{
+    display:flex; align-items:center; gap:11px; padding:10px 10px; border-radius:9px; font-size:13.5px;
+    color:var(--muted); cursor:pointer; border:1px solid transparent; background:none; width:100%; text-align:left; font-family:'Inter';
+  }
+  .side-item .ic{ width:18px; text-align:center; font-size:14px; flex-shrink:0; }
+  .side-item:hover{ color:var(--text); background:var(--panel-2); }
+  .side-item.active{ color:var(--text); background:var(--panel-2); border-color:var(--line); }
+  .side-item.active .ic{ color:var(--cyan); }
+  .side-item .badge{ margin-left:auto; font-size:10.5px; font-family:'JetBrains Mono'; background:rgba(34,211,238,0.14); color:var(--cyan); padding:2px 7px; border-radius:999px; }
+
+  .sidebar-footer{ margin-top:auto; padding-top:14px; border-top:1px solid var(--line); }
+  .logout-btn{ width:100%; padding:10px; border-radius:9px; border:1px solid var(--line); background:transparent; color:var(--text); font-family:'Inter'; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .logout-btn:hover{ border-color:#3a3d4d; }
+
+  /* MAIN */
+  .main-col{ flex:1; min-width:0; }
+  .topbar{ position:sticky; top:0; z-index:20; backdrop-filter:blur(14px); background:rgba(8,9,13,0.78); border-bottom:1px solid var(--line); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .today{ font-size:13px; color:var(--muted); }
+  .live-pill{ display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border:1px solid var(--line); border-radius:999px; font-size:12.5px; color:var(--muted); }
+  .live-pill .p{ width:6px; height:6px; border-radius:50%; background:var(--cyan); animation:pulse 1.6s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+
+  main{ padding:28px 32px 64px; max-width:1180px; }
+  .view{ display:none; }
+  .view.active{ display:block; }
+  .view-head{ margin-bottom:24px; }
+  .view-head h1{ font-size:24px; }
+  .view-head p{ color:var(--muted); font-size:14px; margin-top:4px; }
+
+  /* KPI ROW */
+  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+  .kpi-card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; }
+  .kpi-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .kpi-icon{ width:34px; height:34px; border-radius:9px; background:rgba(139,92,246,0.14); border:1px solid rgba(139,92,246,0.3); display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .kpi-delta{ font-size:12px; font-family:'JetBrains Mono'; }
+  .kpi-delta.up{ color:var(--cyan); }
+  .kpi-delta.down{ color:var(--rose); }
+  .kpi-value{ font-family:'Space Grotesk'; font-size:30px; font-weight:700; }
+  .kpi-label{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+
+  /* GRID */
+  .grid-2{ display:grid; grid-template-columns:1.4fr 1fr; gap:16px; margin-bottom:16px; }
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; }
+  .panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .panel-head h3{ font-size:15.5px; }
+  .panel-head span{ font-size:11.5px; color:var(--muted); font-family:'JetBrains Mono'; }
+  .see-all-btn{
+    font-size:11.5px; color:var(--cyan); font-family:'Inter'; font-weight:600; background:none;
+    border:none; cursor:pointer; padding:0; display:flex; align-items:center; gap:4px;
+  }
+  .see-all-btn:hover{ text-decoration:underline; }
+
+  /* CALLS CHART */
+  .chart-bars{ display:flex; align-items:flex-end; gap:10px; height:150px; }
+  .chart-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .bar-track{ width:100%; height:110px; display:flex; align-items:flex-end; }
+  .bar{ width:100%; border-radius:6px 6px 3px 3px; background:var(--grad); opacity:0.9; }
+  .chart-col .lbl{ font-size:11px; color:var(--muted); line-height:1.2; }
+  .chart-col .val{ font-size:11px; font-family:'JetBrains Mono'; color:var(--text); line-height:1.2; }
+  .chart-bars.large{ height:260px; }
+  .chart-bars.large .bar-track{ height:210px; }
+
+  /* PIPELINE */
+  .pipeline{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .col{ background:#0C0D13; border:1px solid var(--line); border-radius:12px; padding:10px; min-height:170px; }
+  .col-head{ font-size:11px; color:var(--muted); display:flex; justify-content:space-between; margin-bottom:10px; padding:0 2px; }
+  .col-head .n{ font-family:'JetBrains Mono'; color:var(--text); }
+  .card{ background:var(--panel-2); border:1px solid var(--line); border-radius:9px; padding:9px 10px; margin-bottom:8px; font-size:11.5px; }
+  .card .name{ font-weight:600; margin-bottom:3px; }
+  .card .val{ color:var(--cyan); font-family:'JetBrains Mono'; font-size:11px; }
+  .card.won{ border-color:rgba(34,211,238,0.4); }
+
+  /* APPOINTMENTS LIST */
+  .appt-list{ display:flex; flex-direction:column; gap:10px; }
+  .appt-row{ display:flex; align-items:center; gap:12px; padding:11px; border:1px solid var(--line); border-radius:10px; background:#0C0D13; }
+  .appt-date{ width:46px; text-align:center; flex-shrink:0; }
+  .appt-date .d{ font-family:'Space Grotesk'; font-weight:700; font-size:17px; line-height:1; }
+  .appt-date .m{ font-size:10px; color:var(--muted); text-transform:uppercase; }
+  .appt-info{ flex:1; min-width:0; }
+  .appt-info .n{ font-size:13.5px; font-weight:600; }
+  .appt-info .t{ font-size:11.5px; color:var(--muted); }
+  .appt-type{ font-size:10.5px; padding:4px 9px; border-radius:999px; white-space:nowrap; font-family:'JetBrains Mono'; }
+  .type-cleaning{ background:rgba(34,211,238,0.12); color:var(--cyan); border:1px solid rgba(34,211,238,0.3); }
+  .type-checkup{ background:rgba(139,92,246,0.12); color:var(--violet); border:1px solid rgba(139,92,246,0.3); }
+  .type-emergency{ background:rgba(251,113,133,0.12); color:var(--rose); border:1px solid rgba(251,113,133,0.3); }
+  .type-cosmetic{ background:rgba(255,180,67,0.12); color:var(--amber); border:1px solid rgba(255,180,67,0.3); }
+  .type-rootcanal{ background:rgba(251,113,133,0.12); color:var(--rose); border:1px solid rgba(251,113,133,0.3); }
+  .type-whitening{ background:rgba(255,180,67,0.12); color:var(--amber); border:1px solid rgba(255,180,67,0.3); }
+  .type-filling{ background:rgba(139,92,246,0.12); color:var(--violet); border:1px solid rgba(139,92,246,0.3); }
+  .type-newpatient{ background:rgba(34,211,238,0.12); color:var(--cyan); border:1px solid rgba(34,211,238,0.3); }
+
+  /* CALENDAR (Google Calendar style) */
+  .calendar-wrap{ margin-bottom:16px; }
+  .calendar-nav{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .calendar-nav-btn{ width:32px; height:32px; border-radius:50%; border:1px solid var(--line); background:var(--panel-2); color:var(--text); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
+  .calendar-nav-btn:hover{ background:#1c1e28; border-color:#3a3d4d; }
+  .calendar-month-label{ font-family:'Space Grotesk'; font-weight:700; font-size:18px; }
+  .calendar-grid{ display:grid; grid-template-columns:repeat(7,1fr); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .calendar-dow{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); text-align:center;
+    padding:10px 0; background:#0C0D13; border-bottom:1px solid var(--line); border-right:1px solid var(--line);
+  }
+  .calendar-dow:last-child{ border-right:none; }
+  .calendar-day{
+    background:var(--panel); border-right:1px solid var(--line); border-bottom:1px solid var(--line);
+    min-height:112px; padding:6px; display:flex; flex-direction:column; gap:3px; position:relative;
+    transition:background 0.15s;
+  }
+  .calendar-day:nth-child(7n){ border-right:none; }
+  .calendar-day:hover{ background:#15171f; }
+  .calendar-day.empty{ background:#0a0b10; }
+  .calendar-day.empty:hover{ background:#0a0b10; }
+  .calendar-daynum{
+    font-family:'Space Grotesk'; font-size:12.5px; color:var(--muted); font-weight:600;
+    width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:50%;
+  }
+  .calendar-day.today .calendar-daynum{ background:var(--cyan); color:#08090D; font-weight:700; }
+  .calendar-event{
+    font-size:11px; padding:3px 7px; border-radius:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    border-left:3px solid transparent; font-weight:500;
+  }
+  .calendar-event.type-cleaning{ background:rgba(34,211,238,0.14); color:var(--cyan); border-left-color:var(--cyan); }
+  .calendar-event.type-checkup{ background:rgba(139,92,246,0.14); color:var(--violet); border-left-color:var(--violet); }
+  .calendar-event.type-emergency{ background:rgba(251,113,133,0.14); color:var(--rose); border-left-color:var(--rose); }
+  .calendar-event.type-cosmetic{ background:rgba(255,180,67,0.14); color:var(--amber); border-left-color:var(--amber); }
+  .calendar-event.type-rootcanal{ background:rgba(251,113,133,0.14); color:var(--rose); border-left-color:var(--rose); }
+  .calendar-event.type-whitening{ background:rgba(255,180,67,0.14); color:var(--amber); border-left-color:var(--amber); }
+  .calendar-event.type-filling{ background:rgba(139,92,246,0.14); color:var(--violet); border-left-color:var(--violet); }
+  .calendar-event.type-newpatient{ background:rgba(34,211,238,0.14); color:var(--cyan); border-left-color:var(--cyan); }
+  .calendar-more{ font-size:10.5px; color:var(--muted); padding:2px 7px; font-weight:500; }
+  @media (max-width:960px){
+    .calendar-day{ min-height:66px; padding:5px 3px; }
+    .calendar-daynum{ margin:0 auto; }
+    .calendar-day > .calendar-daynum ~ .calendar-event{
+      display:inline-block; font-size:0; padding:0; width:6px; height:6px; border-radius:50%;
+      border-left:none; margin:1px 1.5px 0; background:currentColor;
+    }
+    .calendar-day{ align-items:center; }
+    .calendar-more{
+      display:block; font-size:8.5px; color:var(--muted); text-align:center; margin-top:2px;
+    }
+  }
+
+  /* DAY VIEW POPUP */
+  .day-view-overlay{
+    display:none; position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.6);
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .day-view-overlay.show{ display:flex; }
+  .day-view-modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    width:100%; max-width:420px; max-height:80vh; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .day-view-header{
+    display:flex; align-items:center; justify-content:space-between; padding:16px 20px;
+    border-bottom:1px solid var(--line); flex-shrink:0;
+  }
+  .day-view-header h3{ font-size:16px; }
+  .day-view-close{
+    background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer;
+    width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  }
+  .day-view-close:hover{ background:var(--panel-2); color:var(--text); }
+  .day-view-body{ overflow-y:auto; padding:4px 0; }
+  .day-view-hour{ display:flex; gap:12px; padding:10px 20px; border-bottom:1px solid var(--line); min-height:44px; }
+  .day-view-hour .hour-label{ width:56px; flex-shrink:0; font-size:11px; color:var(--muted); font-family:'JetBrains Mono'; padding-top:2px; }
+  .day-view-hour .hour-events{ flex:1; display:flex; flex-direction:column; gap:6px; }
+  .day-view-event{ font-size:12.5px; padding:6px 10px; border-radius:7px; border-left:3px solid transparent; font-weight:500; }
+  .day-view-empty{ padding:30px 20px; text-align:center; color:var(--muted); font-size:13px; }
+
+  /* CALLS TABLE */
+  .table-scroll{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table{ width:100%; border-collapse:collapse; min-width:420px; }
+  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); padding:0 10px 10px; font-weight:600; }
+  td{ padding:12px 10px; font-size:13.5px; border-top:1px solid var(--line); }
+  tr:hover td{ background:rgba(255,255,255,0.015); }
+  .outcome{ font-size:11px; padding:4px 10px; border-radius:999px; font-family:'JetBrains Mono'; display:inline-block; }
+  .outcome-booked{ background:rgba(34,211,238,0.12); color:var(--cyan); border:1px solid rgba(34,211,238,0.3); }
+  .outcome-followup{ background:rgba(255,180,67,0.12); color:var(--amber); border:1px solid rgba(255,180,67,0.3); }
+  .outcome-voicemail{ background:rgba(148,151,166,0.12); color:var(--muted); border:1px solid var(--line); }
+  .outcome-cancelled{ background:rgba(251,113,133,0.12); color:var(--rose); border:1px solid rgba(251,113,133,0.3); }
+  .outcome-rescheduled{ background:rgba(255,180,67,0.12); color:var(--amber); border:1px solid rgba(255,180,67,0.3); }
+  .outcome-new{ background:rgba(139,92,246,0.12); color:var(--violet); border:1px solid rgba(139,92,246,0.3); }
+  .outcome-contacted{ background:rgba(255,180,67,0.12); color:var(--amber); border:1px solid rgba(255,180,67,0.3); }
+  .duration{ font-family:'JetBrains Mono'; color:var(--muted); font-size:12.5px; }
+  .caller{ font-weight:600; }
+  .caller-sub{ font-size:11.5px; color:var(--muted); }
+
+  /* REPORTS extra stats */
+  .stat-strip{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:16px; }
+  .stat-box{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .stat-box strong{ display:block; font-family:'Space Grotesk'; font-size:22px; }
+  .stat-box span{ font-size:12px; color:var(--muted); }
+
+  /* SETTINGS */
+  .settings-form{ display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:640px; }
+  .settings-form.full{ grid-template-columns:1fr; }
+  .settings-form label{ display:block; font-size:12.5px; color:var(--muted); margin-bottom:7px; }
+  .settings-form input, .settings-form textarea{
+    width:100%; background:#0C0D13; border:1px solid var(--line); border-radius:9px; padding:11px 12px; color:var(--text); font-family:'Inter'; font-size:13.5px;
+  }
+  .field-full{ grid-column:1 / -1; }
+  .save-btn{ padding:11px 22px; border:none; border-radius:9px; background:var(--grad); color:#08090D; font-weight:700; font-size:13.5px; cursor:pointer; margin-top:6px; grid-column:1 / -1; width:fit-content; }
+
+  /* Stale-data / error warning banner */
+  .stale-banner{
+    display:none; align-items:center; gap:8px; background:rgba(255,180,67,0.08); border:1px solid rgba(255,180,67,0.35);
+    color:var(--amber); font-size:12.5px; padding:9px 14px; border-radius:9px; margin-bottom:16px; font-family:'JetBrains Mono';
+  }
+  .stale-banner.show{ display:flex; }
+  .stale-banner.is-error{ background:rgba(251,113,133,0.08); border-color:rgba(251,113,133,0.35); color:var(--rose); }
+
+  /* MOBILE */
+  .menu-toggle{
+    display:none; margin-left:auto; width:38px; height:38px; border-radius:9px;
+    border:1px solid var(--line); background:var(--panel-2); color:var(--text);
+    font-size:17px; cursor:pointer; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  @media (max-width:1080px){
+    .grid-2{ grid-template-columns:1fr; }
+  }
+  @media (max-width:960px){
+    body.nav-open{ overflow:hidden; }
+    .chart-bars{ height:130px; gap:6px; }
+    .chart-bars .bar-track{ height:88px; }
+    .chart-bars.large{ height:200px; }
+    .chart-bars.large .bar-track{ height:150px; }
+    .chart-col{ gap:4px; }
+    .chart-col .lbl{ font-size:9.5px; }
+    .chart-col .val{ font-size:9.5px; }
+    .app-shell{ flex-direction:column; }
+    .sidebar{
+      width:100%; height:auto; position:sticky; top:0; z-index:40;
+      flex-direction:column; align-items:stretch; padding:12px 14px; gap:0;
+      overflow:visible;
+    }
+    .brand{ border-bottom:none; margin-bottom:0; padding:2px 4px; display:flex; align-items:center; }
+    .brand-name{ font-size:13.5px; }
+    .brand-sub{ font-size:10.5px; }
+    .menu-toggle{ display:flex; }
+    .side-label{ display:none; }
+
+    /* nav + footer collapse into a dropdown panel under the brand row */
+    .side-nav{
+      flex-direction:column; gap:2px; max-height:0; overflow:hidden;
+      opacity:0; transition:max-height 0.25s ease, opacity 0.2s ease, margin-top 0.25s ease;
+      margin-top:0;
+    }
+    .side-item{ white-space:nowrap; padding:11px 12px; }
+    .sidebar-footer{
+      max-height:0; overflow:hidden; opacity:0; margin-top:0; padding-top:0; border-top:none;
+      transition:max-height 0.25s ease, opacity 0.2s ease, margin-top 0.25s ease;
+    }
+    .sidebar.nav-open .side-nav{ max-height:340px; opacity:1; margin-top:14px; }
+    .sidebar.nav-open .sidebar-footer{
+      max-height:80px; opacity:1; margin-top:10px; padding-top:12px; border-top:1px solid var(--line);
+    }
+
+    main{ padding:20px 16px 48px; }
+    .topbar{ padding:12px 16px; gap:10px; }
+    .today{ font-size:12px; }
+    .live-pill{ font-size:11.5px; padding:6px 10px; }
+    .kpi-row{ grid-template-columns:repeat(2,1fr); gap:10px; }
+    .grid-2{ grid-template-columns:1fr; gap:10px; margin-bottom:10px; }
+    .panel{ padding:12px; }
+    .panel-head{ margin-bottom:12px; }
+    .panel-head h3{ font-size:13.5px; }
+    .panel-head span{ font-size:10px; }
+    .see-all-btn{ font-size:10.5px; }
+    .appt-list{ gap:7px; }
+    .appt-row{ padding:9px; gap:9px; }
+    .appt-date{ width:38px; }
+    .appt-date .d{ font-size:14px; }
+    .appt-info .n{ font-size:12.5px; }
+    .appt-info .t{ font-size:10.5px; }
+    .appt-type{ font-size:9.5px; padding:3px 7px; }
+    .stat-strip{ grid-template-columns:1fr; }
+    .settings-form{ grid-template-columns:1fr; }
+    .view-head h1{ font-size:20px; }
+    table{ min-width:0; }
+    th{ font-size:9.5px; padding:0 6px 8px; }
+    td{ padding:9px 6px; font-size:12px; }
+    .caller{ font-size:12.5px; }
+    .caller-sub{ font-size:10.5px; }
+    .outcome{ font-size:9.5px; padding:3px 7px; }
+    .duration{ font-size:11px; }
+  }
+  @media (max-width:560px){
+    .kpi-row{ grid-template-columns:1fr; }
+    .pipeline{ grid-template-columns:1fr; }
+    /* Calls table (full page): hide Type column, keep Caller/Time/Duration/Outcome */
+    #view-calls th:nth-child(4), #view-calls td:nth-child(4){ display:none; }
+    /* Overview's compact Recent calls: hide Type only, keep Caller/Time/Duration/Outcome */
+    #table-calls-overview th:nth-child(4), #table-calls-overview td:nth-child(4){ display:none; }
+    /* Leads table: hide Phone + Email on the full leads list, keep name/type/status */
+    #table-leads-full th:nth-child(3), #table-leads-full td:nth-child(3),
+    #table-leads-full th:nth-child(4), #table-leads-full td:nth-child(4){ display:none; }
+    table{ table-layout:fixed; }
+    .caller{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .caller-sub{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    th, td{ padding:6px 4px; font-size:10.5px; }
+    .chart-bars{ height:100px; gap:3px; }
+    .chart-bars .bar-track{ height:64px; }
+    .chart-bars.large{ height:160px; }
+    .chart-bars.large .bar-track{ height:118px; }
+    .kpi-value{ font-size:24px; }
+    .panel{ padding:11px; }
+    .panel-head h3{ font-size:13px; }
+    .panel-head{ margin-bottom:10px; }
+    .appt-row{ flex-wrap:wrap; gap:6px; padding:9px; }
+    .appt-type{ margin-left:0; }
+    .appt-info .n{ font-size:12px; }
+    .appt-info .t{ font-size:10px; }
+    #view-calls th, #view-calls td,
+    #table-leads-full th, #table-leads-full td{ padding:6px 4px; font-size:10px; }
+    #view-calls .caller, #table-leads-full .caller{ font-size:11px; }
+    .calendar-day{ min-height:58px; padding:4px; align-items:center; }
+    .calendar-daynum{ font-size:11px; width:20px; height:20px; margin:0 auto; }
+    .calendar-month-label{ font-size:15px; }
+    .calendar-nav-btn{ width:28px; height:28px; font-size:14px; }
+    .day-view-overlay{ align-items:flex-end; padding:0; }
+    .day-view-modal{ max-width:100%; max-height:85vh; border-radius:14px 14px 0 0; }
+    .day-view-hour{ padding:9px 14px; gap:8px; }
+    .day-view-hour .hour-label{ width:48px; font-size:10.5px; }
+    td, th{ padding:9px 8px; font-size:12.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">TD</div>
+      <div>
+        <div class="brand-name">Teeth Dental Care</div>
+        <div class="brand-sub">Powered by Assad AI</div>
+      </div>
+      <button class="menu-toggle" id="menu-toggle-btn" aria-label="Open menu">☰</button>
+    </div>
+
+    <div class="side-label">Dashboard</div>
+    <nav class="side-nav" id="side-nav">
+      <button class="side-item active" data-view="overview"><span class="ic">▦</span>Overview</button>
+      <button class="side-item" data-view="calls"><span class="ic">☎</span>Calls<span class="badge" id="calls-badge">342</span></button>
+      <button class="side-item" data-view="leads"><span class="ic">◎</span>Leads</button>
+      <button class="side-item" data-view="appointments"><span class="ic">📅</span>Appointments</button>
+      <button class="side-item" data-view="calendar"><span class="ic">🗓</span>Calendar</button>
+      <button class="side-item" data-view="reports"><span class="ic">▤</span>Reports</button>
+    </nav>
+
+    
+
+    <div class="sidebar-footer" id="sidebar-footer">
+      <button class="logout-btn" id="logout-btn">↩ Log out</button>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <div class="topbar">
+      <span class="today mono" id="today-date"></span>
+      <div class="live-pill"><span class="p"></span>Agent live &amp; answering calls</div>
+    </div>
+
+    <main>
+      <div class="stale-banner" id="stale-banner"></div>
+
+      <!-- OVERVIEW -->
+      <section class="view active" id="view-overview">
+        <div class="view-head">
+          <h1>Good morning, Teeth Dental Care 👋</h1>
+          <p>Here's how your AI voice agent performed over the last 7 days.</p>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-top"><div class="kpi-icon">☎</div></div>
+            <div class="kpi-value mono" id="kpi-total-calls">342</div>
+            <div class="kpi-label">Total calls this month</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><div class="kpi-icon">◎</div></div>
+            <div class="kpi-value mono" id="kpi-leads-captured">128</div>
+            <div class="kpi-label">Leads captured</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><div class="kpi-icon">📅</div></div>
+            <div class="kpi-value mono" id="kpi-appts-booked">282</div>
+            <div class="kpi-label">Appointments booked</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><div class="kpi-icon">%</div></div>
+            <div class="kpi-value mono" id="kpi-conversion-rate">82%</div>
+            <div class="kpi-label">Call-to-booking rate</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head"><h3>Calls this week</h3><span>MON – SUN</span></div>
+            <div class="chart-bars" id="chart-bars-overview"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Recent leads</h3><button class="see-all-btn" data-goto-view="leads">See all →</button></div>
+            <div class="table-scroll">
+            <table>
+              <thead><tr><th>Patient</th><th>Interest</th><th>Status</th></tr></thead>
+              <tbody id="leads-table-overview"></tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head"><h3>Recent calls</h3><button class="see-all-btn" data-goto-view="calls">See all →</button></div>
+            <div class="table-scroll">
+            <table id="table-calls-overview">
+              <thead><tr><th>Caller</th><th>Time</th><th>Duration</th><th>Type</th><th>Outcome</th></tr></thead>
+              <tbody id="calls-table-overview"></tbody>
+            </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Upcoming appointments</h3><button class="see-all-btn" data-goto-view="appointments">See all →</button></div>
+            <div class="appt-list" id="appt-list-overview"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CALLS -->
+      <section class="view" id="view-calls">
+        <div class="view-head">
+          <h1>Calls</h1>
+          <p>Every call your AI voice agent has answered, with outcome and duration.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>All recent calls</h3><span>LAST 24H</span></div>
+          <table>
+            <thead><tr><th>Caller</th><th>Time</th><th>Duration</th><th>Type</th><th>Outcome</th></tr></thead>
+            <tbody id="calls-table-full"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- LEADS -->
+      <section class="view" id="view-leads">
+        <div class="view-head">
+          <h1>Leads</h1>
+          <p>Where every patient lead sits in your pipeline right now.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>All leads</h3><span>LIVE</span></div>
+          <table id="table-leads-full">
+            <thead><tr><th>First</th><th>Last</th><th>Phone</th><th>Email</th><th>Type</th><th>Status</th></tr></thead>
+            <tbody id="leads-table-full"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- APPOINTMENTS -->
+      <section class="view" id="view-appointments">
+        <div class="view-head">
+          <h1>Appointments</h1>
+          <p>Your calendar for the week ahead, filled straight from booked calls.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Upcoming appointments</h3><span>NEXT 7 DAYS</span></div>
+          <div class="appt-list" id="appt-list-full"></div>
+        </div>
+      </section>
+
+      <!-- CALENDAR -->
+      <section class="view" id="view-calendar">
+        <div class="view-head">
+          <h1>Calendar</h1>
+          <p>A month-at-a-glance view of every booked appointment.</p>
+        </div>
+        <div class="panel calendar-wrap">
+          <div class="calendar-nav">
+            <button class="calendar-nav-btn" id="cal-prev-btn">‹</button>
+            <span class="calendar-month-label" id="calendar-month-label"></span>
+            <button class="calendar-nav-btn" id="cal-next-btn">›</button>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+
+        <div class="day-view-overlay" id="day-view-overlay" onclick="closeDayView(event)">
+          <div class="day-view-modal" onclick="event.stopPropagation()">
+            <div class="day-view-header">
+              <h3 id="day-view-title"></h3>
+              <button class="day-view-close" onclick="closeDayView()">✕</button>
+            </div>
+            <div class="day-view-body" id="day-view-body"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="view" id="view-reports">
+        <div class="view-head">
+          <h1>Reports</h1>
+          <p>How your voice agent is trending this month.</p>
+        </div>
+        <div class="stat-strip">
+  <div class="stat-box"><strong class="mono">4.6★</strong><span>Avg. caller satisfaction</span></div>
+  <div class="stat-box"><strong class="mono">0:42</strong><span>Avg. time to answer</span></div>
+  <div class="stat-box"><strong class="mono">31%</strong><span>Calls answered after hours</span></div>
+</div>
+<div class="stat-strip">
+  <div class="stat-box"><strong class="mono">6%</strong><span>Calls escalated to staff</span></div>
+  <div class="stat-box"><strong class="mono">£9,400</strong><span>Est. booked revenue this month</span></div>
+  <div class="stat-box"><strong class="mono">0</strong><span>Missed calls this month</span></div>
+</div>
+        <div class="panel">
+          <div class="panel-head"><h3>Calls this week</h3><span>MON – SUN</span></div>
+          <div class="chart-bars large" id="chart-bars-reports"></div>
+        </div>
+      </section>
+
+      
+
+    </main>
+  </div>
+</div>
+
+<script>
+  let calendarAppointments = [];
+  let calendarViewDate = new Date();
+
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+
+  // Mobile hamburger menu toggle
+  const sidebarEl = document.querySelector('.sidebar');
+  document.getElementById('menu-toggle-btn').addEventListener('click', ()=>{
+    sidebarEl.classList.toggle('nav-open');
+    document.body.classList.toggle('nav-open');
+  });
+  // Close the menu automatically after picking a view (mobile only)
+  document.querySelectorAll('.side-item[data-view]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      sidebarEl.classList.remove('nav-open');
+      document.body.classList.remove('nav-open');
+    });
+  });
+  document.getElementById('logout-btn').addEventListener('click', async ()=>{
+    try {
+      if (db) { await db.auth.signOut(); }
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
+    window.location.href = 'AssadAI.html';
+  });
+
+  // Reusable view-switcher (used by sidebar clicks AND "See all" buttons)
+  function goToView(viewName){
+    document.querySelectorAll('.side-item[data-view]').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    const targetBtn = document.querySelector('.side-item[data-view="' + viewName + '"]');
+    if (targetBtn) targetBtn.classList.add('active');
+    const targetView = document.getElementById('view-' + viewName);
+    if (targetView) targetView.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Sidebar navigation
+  document.querySelectorAll('.side-item[data-view]').forEach(btn=>{
+    btn.addEventListener('click', ()=> goToView(btn.dataset.view));
+  });
+
+  // "See all" buttons on Overview panels
+  document.querySelectorAll('.see-all-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> goToView(btn.dataset.gotoView));
+  });
+
+  // ---------------------------------------------------------------
+  // Supabase setup
+  // Replace SUPABASE_ANON_KEY below with your project's public anon key.
+  // Never put your service_role key in client-side code like this file.
+  // ---------------------------------------------------------------
+  const SUPABASE_URL = 'https://dtgcxbhapodafbxmusdt.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_V70w3BqFn2evhko4Z9WAKg_x_0kaGJr';
+  const BUSINESS_ID = '4558a376-7b98-442c-b58f-6a0dc8b00cb0';
+
+  const db = (SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== 'SUPABASE_ANON_KEY')
+    ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+  // Shared demo data (fallback / initial render so the dashboard never looks empty)
+  const chartData = [
+    {d:'Mon', v:38},{d:'Tue', v:52},{d:'Wed', v:61},{d:'Thu', v:44},
+    {d:'Fri', v:70},{d:'Sat', v:35},{d:'Sun', v:22}
+  ];
+  renderChart(chartData);
+
+  const calls = [
+    {name:'Alina Rodriguez', sub:'(646) 555-0142', time:'9:41 AM', dur:'3:12', type:'Root Canal', outcome:'Booked', cls:'booked'},
+    {name:'Marcus Huang', sub:'(212) 555-0198', time:'10:03 AM', dur:'1:47', type:'Cleaning', outcome:'Follow-up', cls:'followup'},
+    {name:'Priya Shah', sub:'(917) 555-0177', time:'11:22 AM', dur:'2:35', type:'New Patient', outcome:'Booked', cls:'booked'},
+    {name:'Devon Klein', sub:'(347) 555-0110', time:'1:15 PM', dur:'0:58', type:'Whitening', outcome:'Voicemail', cls:'voicemail'},
+    {name:'Nora Williams', sub:'(718) 555-0163', time:'2:47 PM', dur:'4:02', type:'Checkup', outcome:'Booked', cls:'booked'},
+    {name:'Sam Torres', sub:'(929) 555-0184', time:'4:10 PM', dur:'2:11', type:'Emergency', outcome:'Follow-up', cls:'followup'},
+    {name:'Late Night Caller', sub:'(203) 555-0129', time:'10:52 PM', dur:'2:20', type:'Emergency', outcome:'Booked', cls:'booked'},
+    {name:'Ravi Patel', sub:'(732) 555-0155', time:'11:38 PM', dur:'1:33', type:'New Patient', outcome:'Booked', cls:'booked'},
+  ];
+  renderCalls(calls);
+
+  const appts = [
+    {d:'29', m:'Jul', iso:'2026-07-29', name:'Sam Torres', t:'10:00 AM · Checkup', type:'Checkup', cls:'checkup'},
+    {d:'29', m:'Jul', iso:'2026-07-29', name:'Nora Williams', t:'2:00 PM · Cleaning', type:'Cleaning', cls:'cleaning'},
+    {d:'30', m:'Jul', iso:'2026-07-30', name:'Alina Rodriguez', t:'9:30 AM · Root Canal', type:'Emergency', cls:'emergency'},
+    {d:'31', m:'Jul', iso:'2026-07-31', name:'Devon Klein', t:'1:00 PM · Whitening', type:'Cosmetic', cls:'cosmetic'},
+    {d:'02', m:'Aug', iso:'2026-08-02', name:'Priya Shah', t:'11:00 AM · New Patient Exam', type:'Checkup', cls:'checkup'},
+    {d:'03', m:'Aug', iso:'2026-08-03', name:'Jasmine Lee', t:'9:15 AM · Cleaning', type:'Cleaning', cls:'cleaning'},
+    {d:'03', m:'Aug', iso:'2026-08-03', name:'Tom Baxter', t:'1:30 PM · Checkup', type:'Checkup', cls:'checkup'},
+    {d:'04', m:'Aug', iso:'2026-08-04', name:'Emma Clarke', t:'2:30 PM · Root Canal', type:'Root Canal', cls:'rootcanal'},
+    {d:'04', m:'Aug', iso:'2026-08-04', name:'Leo Martinez', t:'4:00 PM · Whitening', type:'Cosmetic', cls:'cosmetic'},
+    {d:'05', m:'Aug', iso:'2026-08-05', name:'Ravi Patel', t:'10:45 AM · New Patient Exam', type:'New Patient', cls:'newpatient'},
+    {d:'05', m:'Aug', iso:'2026-08-05', name:'Chloe Bennett', t:'3:15 PM · Filling', type:'Filling', cls:'filling'},
+    {d:'06', m:'Aug', iso:'2026-08-06', name:'Marcus Huang', t:'9:00 AM · Cleaning', type:'Cleaning', cls:'cleaning'},
+    {d:'06', m:'Aug', iso:'2026-08-06', name:'Olivia Turner', t:'11:30 AM · Checkup', type:'Checkup', cls:'checkup'},
+    {d:'07', m:'Aug', iso:'2026-08-07', name:'Kwame Asante', t:'1:00 PM · Root Canal', type:'Root Canal', cls:'rootcanal'},
+    {d:'07', m:'Aug', iso:'2026-08-07', name:'Ella Robinson', t:'4:30 PM · New Patient Exam', type:'New Patient', cls:'newpatient'},
+  ];
+  renderAppointments(appts);
+
+  const leadsDemo = [
+    {name:'Marcus Huang', phone:'(212) 555-0198', email:'marcus.h@example.com', interest:'Cleaning inquiry', stage:'new'},
+    {name:'Priya Shah', phone:'(917) 555-0177', email:'priya.s@example.com', interest:'New patient', stage:'new'},
+    {name:'Alina Rodriguez', phone:'(646) 555-0142', email:'alina.r@example.com', interest:'Root canal follow-up', stage:'contacted'},
+    {name:'Devon Klein', phone:'(347) 555-0110', email:'devon.k@example.com', interest:'Whitening consult', stage:'contacted'},
+    {name:'Sam Torres', phone:'(929) 555-0184', email:'sam.t@example.com', interest:'Checkup', stage:'booked'},
+    {name:'Jasmine Lee', phone:'(646) 555-0187', email:'jasmine.l@example.com', interest:'Cleaning', stage:'booked'},
+    {name:'Tom Baxter', phone:'(917) 555-0122', email:'tom.b@example.com', interest:'Checkup', stage:'contacted'},
+    {name:'Emma Clarke', phone:'(212) 555-0166', email:'emma.c@example.com', interest:'Root canal', stage:'booked'},
+    {name:'Leo Martinez', phone:'(718) 555-0199', email:'leo.m@example.com', interest:'Whitening consult', stage:'new'},
+    {name:'Ravi Patel', phone:'(732) 555-0155', email:'ravi.p@example.com', interest:'New patient', stage:'booked'},
+    {name:'Chloe Bennett', phone:'(646) 555-0173', email:'chloe.b@example.com', interest:'Filling', stage:'booked'},
+    {name:'Olivia Turner', phone:'(929) 555-0141', email:'olivia.t@example.com', interest:'Checkup', stage:'new'},
+    {name:'Kwame Asante', phone:'(212) 555-0159', email:'kwame.a@example.com', interest:'Root canal', stage:'contacted'},
+    {name:'Ella Robinson', phone:'(347) 555-0188', email:'ella.r@example.com', interest:'New patient', stage:'new'},
+    {name:'Noah Fischer', phone:'(718) 555-0177', email:'noah.f@example.com', interest:'Cleaning', stage:'booked'},
+  ];
+  renderLeadsTable('leads-table-overview', leadsDemo.slice(0, 5), true);
+  renderLeadsTable('leads-table-full', leadsDemo, false);
+
+  // ---------------------------------------------------------------
+  // Render helpers (used for both demo data and live Supabase data)
+  // ---------------------------------------------------------------
+  function renderChart(data){
+    const max = Math.max(...data.map(c=>c.v), 1);
+    const html = data.map(c=>`
+      <div class="chart-col">
+        <div class="bar-track"><div class="bar" style="height:${(c.v/max*100)}%"></div></div>
+        <div class="val">${c.v}</div>
+        <div class="lbl">${c.d}</div>
+      </div>
+    `).join('');
+    document.getElementById('chart-bars-overview').innerHTML = html;
+    document.getElementById('chart-bars-reports').innerHTML = html;
+  }
+
+  function renderCalls(list){
+    const rowHtml = c => `
+      <tr>
+        <td><div class="caller">${c.name}</div><div class="caller-sub">${c.sub}</div></td>
+        <td class="mono" style="color:var(--muted); font-size:12.5px;">${c.time}</td>
+        <td class="duration">${c.dur}</td>
+        <td>${c.type}</td>
+        <td><span class="outcome outcome-${c.cls}">${c.outcome}</span></td>
+      </tr>
+    `;
+    document.getElementById('calls-table-overview').innerHTML = list.slice(0, 10).map(rowHtml).join('');
+    document.getElementById('calls-table-full').innerHTML = list.map(rowHtml).join('');
+  }
+
+  function renderAppointments(list){
+    const rowHtml = a => `
+      <div class="appt-row">
+        <div class="appt-date"><div class="d">${a.d}</div><div class="m">${a.m}</div></div>
+        <div class="appt-info">
+          <div class="n">${a.name}</div>
+          <div class="t">${a.t}</div>
+          ${a.phone || a.email ? `<div class="t">${a.phone || ''}${a.phone && a.email ? ' · ' : ''}${a.email || ''}</div>` : ''}
+        </div>
+        <span class="appt-type type-${a.cls}">${a.type}</span>
+      </div>
+    `;
+    document.getElementById('appt-list-overview').innerHTML = list.slice(0, 5).map(rowHtml).join('');
+    document.getElementById('appt-list-full').innerHTML = list.map(rowHtml).join('');
+    renderCalendar(list);
+  }
+
+  // ---------------------------------------------------------------
+  // Month-grid calendar (Calendar tab)
+  // ---------------------------------------------------------------
+  function renderCalendar(list){
+    calendarAppointments = list;
+    drawCalendar();
+  }
+
+  function drawCalendar(){
+    const grid = document.getElementById('calendar-grid');
+    const label = document.getElementById('calendar-month-label');
+    if (!grid || !label) return;
+
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    label.textContent = calendarViewDate.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+
+    const byDate = {};
+    calendarAppointments.forEach(a => {
+      if (!a.iso) return;
+      (byDate[a.iso] = byDate[a.iso] || []).push(a);
+    });
+
+    const firstOfMonth = new Date(year, month, 1);
+    const startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday-first grid
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayIso = new Date().toISOString().slice(0, 10);
+
+    const dowLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    let html = dowLabels.map(d => `<div class="calendar-dow">${d}</div>`).join('');
+
+    for (let i = 0; i < startOffset; i++){
+      html += `<div class="calendar-day empty"></div>`;
+    }
+
+    for (let day = 1; day <= daysInMonth; day++){
+      const iso = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const dayEvents = byDate[iso] || [];
+      const isToday = iso === todayIso;
+      const shown = dayEvents.slice(0, 3).map(a => `<div class="calendar-event type-${a.cls}">${a.name}</div>`).join('');
+      const more = dayEvents.length > 3 ? `<div class="calendar-more">+${dayEvents.length - 3} more</div>` : '';
+      html += `
+        <div class="calendar-day${isToday ? ' today' : ''}" style="cursor:pointer;" onclick="openDayView('${iso}')">
+          <div class="calendar-daynum">${day}</div>
+          ${shown}
+          ${more}
+        </div>
+      `;
+    }
+
+    grid.innerHTML = html;
+  }
+
+  document.getElementById('cal-prev-btn').addEventListener('click', ()=>{
+    calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1);
+    drawCalendar();
+  });
+  document.getElementById('cal-next-btn').addEventListener('click', ()=>{
+    calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1);
+    drawCalendar();
+  });
+
+  // Pulls the hour (0-23) out of an appointment's "10:00 AM · Checkup" style label
+  function extractTimeInfo(a){
+    const match = (a.t || '').match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!match) return { hour: 0, minute: 0 };
+    let hour = parseInt(match[1], 10);
+    const minute = parseInt(match[2], 10);
+    const ampm = match[3].toUpperCase();
+    if (ampm === 'PM' && hour !== 12) hour += 12;
+    if (ampm === 'AM' && hour === 12) hour = 0;
+    return { hour, minute };
+  }
+
+  function openDayView(iso){
+    const dayAppts = calendarAppointments.filter(a => a.iso === iso);
+    const dateObj = new Date(iso + 'T00:00:00');
+    document.getElementById('day-view-title').textContent =
+      dateObj.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+    const body = document.getElementById('day-view-body');
+    if (dayAppts.length === 0){
+      body.innerHTML = `<div class="day-view-empty">No appointments booked.</div>`;
+    } else {
+      const bySlot = {};
+      dayAppts.forEach(a => {
+        const { hour, minute } = extractTimeInfo(a);
+        const slotKey = `${hour}:${minute < 30 ? '00' : '30'}`;
+        (bySlot[slotKey] = bySlot[slotKey] || []).push(a);
+      });
+      let html = '';
+      for (let h = 9; h <= 17; h++){
+        for (let m = 0; m < 60; m += 30){
+          if (h === 17 && m === 30) continue; // stop at 5:00 PM
+          const slotKey = `${h}:${m === 0 ? '00' : '30'}`;
+          const displayHour = h > 12 ? h - 12 : h;
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          const label = `${displayHour}:${m === 0 ? '00' : '30'} ${ampm}`;
+          const events = (bySlot[slotKey] || [])
+            .map(a => `<div class="day-view-event calendar-event type-${a.cls}">${a.name} — ${a.type}</div>`)
+            .join('');
+          html += `
+            <div class="day-view-hour">
+              <div class="hour-label">${label}</div>
+              <div class="hour-events">${events}</div>
+            </div>
+          `;
+        }
+      }
+      body.innerHTML = html;
+    }
+    document.getElementById('day-view-overlay').classList.add('show');
+  }
+
+  function closeDayView(e){
+    if (e && e.target !== document.getElementById('day-view-overlay')) return;
+    document.getElementById('day-view-overlay').classList.remove('show');
+  }
+
+  // Turns a free-text service name into a CSS-safe class slug, e.g.
+  // "Root Canal" -> "rootcanal", "New Patient" -> "newpatient"
+  function serviceToClass(service){
+    return (service || 'checkup').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  // ---------------------------------------------------------------
+  // Live data from Supabase
+  // ---------------------------------------------------------------
+  let usingLiveAppointments = false;
+  let usingLiveCalls = false;
+  let usingLiveLeads = false;
+
+  let liveCallsRaw = null;
+  let liveLeadsRaw = null;
+  let liveAppointmentsRaw = null;
+  let liveTotalCallsCount = null;
+
+  // Track the most recent real error per table so the banner can show
+  // *why* something isn't live, instead of a generic "not logged in" message.
+  const lastErrors = { appointments: null, calls: null, leads: null };
+
+  // Recomputes KPI tiles and the weekly chart from whatever live data has
+  // loaded so far. Safe to call multiple times as each fetch resolves.
+  function updateKpisAndChart(){
+    if (liveCallsRaw){
+      const totalBadge = liveTotalCallsCount != null ? liveTotalCallsCount : liveCallsRaw.length;
+      document.getElementById('kpi-total-calls').textContent = totalBadge;
+      document.getElementById('calls-badge').textContent = totalBadge;
+
+      const bookedCount = liveCallsRaw.filter(c => c.outcome === 'booked').length;
+      const rate = liveCallsRaw.length > 0 ? Math.round((bookedCount / liveCallsRaw.length) * 100) : 0;
+      document.getElementById('kpi-conversion-rate').textContent = rate + '%';
+
+      const dayLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      const counts = [0,0,0,0,0,0,0];
+      const now = new Date();
+      const weekAgo = new Date(now.getTime() - 7*24*60*60*1000);
+      liveCallsRaw.forEach(c => {
+        const started = new Date(c.started_at);
+        if (started >= weekAgo && started <= now){
+          const idx = (started.getDay() + 6) % 7; // 0=Mon..6=Sun
+          counts[idx]++;
+        }
+      });
+      renderChart(dayLabels.map((d,i)=>({ d, v: counts[i] })));
+    }
+
+    if (liveLeadsRaw){
+      document.getElementById('kpi-leads-captured').textContent = liveLeadsRaw.length;
+    }
+
+    if (liveAppointmentsRaw){
+      document.getElementById('kpi-appts-booked').textContent = liveAppointmentsRaw.length;
+    }
+  }
+
+  // Shows either a generic "you're seeing demo data" note, or — if a real
+  // Supabase error came back — the actual error message + table, so a
+  // failed fetch is never silent.
+  function updateStaleBanner(){
+    const banner = document.getElementById('stale-banner');
+    const anyLive = usingLiveAppointments || usingLiveCalls || usingLiveLeads;
+
+    if (!db){
+      banner.classList.remove('show');
+      return;
+    }
+
+    if (anyLive){
+      banner.classList.remove('show', 'is-error');
+      return;
+    }
+
+    const errorEntries = Object.entries(lastErrors).filter(([, err]) => err);
+
+    if (errorEntries.length > 0){
+      const msg = errorEntries.map(([table, err]) => `${table}: ${err}`).join(' · ');
+      banner.textContent = `⚠ Couldn't load live data — ${msg}`;
+      banner.classList.add('show', 'is-error');
+    } else {
+      banner.textContent = `⚠ Showing demo data — no live rows came back for business_id ${BUSINESS_ID}, or your session has expired.`;
+      banner.classList.add('show');
+      banner.classList.remove('is-error');
+    }
+  }
+
+  async function fetchAppointments(){
+    if (!db) { updateStaleBanner(); return; } // no anon key configured yet — keep showing demo data
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+
+    const { data, error } = await db
+      .from('appointments')
+      .select('*')
+      .eq('business_id', BUSINESS_ID)
+      // exclude cancelled appointments so they don't linger in the
+      // "Upcoming appointments" list.
+      .neq('status', 'cancelled')
+      // only show today or future appointments — otherwise old dates
+      // pile up at the top since the list is sorted oldest-first.
+      .gte('appointment_date', todayIso)
+      .order('appointment_date', { ascending: true });
+
+    if (error){
+      console.error('Error fetching dashboard appointments:', error);
+      lastErrors.appointments = error.message || error.code || 'unknown error';
+      updateStaleBanner();
+      return;
+    }
+    lastErrors.appointments = null;
+    if (!data || data.length === 0) { updateStaleBanner(); return; }
+
+    // Map Supabase rows into the shape renderAppointments() expects.
+    // the appointments table has `name` and `service` columns (not
+    // `patient_name` / `appointment_type`), and the time is stored separately
+    // in `appointment_time`, not embedded in `appointment_date`.
+    const mapped = data.map(row => {
+      const dt = new Date(`${row.appointment_date}T${row.appointment_time || '00:00'}`);
+      const service = row.service || 'Checkup';
+      return {
+        d: dt.toLocaleDateString('en-US', { day:'2-digit' }),
+        m: dt.toLocaleDateString('en-US', { month:'short' }),
+        iso: row.appointment_date,
+        name: row.name || 'Unknown',
+        t: dt.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) + ' · ' + service,
+        type: service,
+        cls: serviceToClass(service),
+        phone: row.phone || '',
+        email: row.email || ''
+      };
+    });
+    liveAppointmentsRaw = data;
+    usingLiveAppointments = true;
+    updateStaleBanner();
+    renderAppointments(mapped);
+    updateKpisAndChart();
+  }
+
+  fetchAppointments();
+  fetchCalls();
+  fetchLeads();
+
+  if (db) {
+    db.channel('dashboard-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments', filter: `business_id=eq.${BUSINESS_ID}` }, fetchAppointments)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calls', filter: `business_id=eq.${BUSINESS_ID}` }, fetchCalls)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads', filter: `business_id=eq.${BUSINESS_ID}` }, fetchLeads)
+      .subscribe();
+  }
+
+  // ---------------------------------------------------------------
+  // Live calls from Supabase
+  // ---------------------------------------------------------------
+  async function fetchCalls(){
+    if (!db) { updateStaleBanner(); return; }
+
+    // Separate lightweight count query so the KPI/badge reflect the true
+    // total even though the table below only shows the most recent 50.
+    const { count, error: countError } = await db
+      .from('calls')
+      .select('*', { count: 'exact', head: true })
+      .eq('business_id', BUSINESS_ID);
+    if (!countError && count != null) liveTotalCallsCount = count;
+
+    const { data, error } = await db
+      .from('calls')
+      .select('*')
+      .eq('business_id', BUSINESS_ID)
+      .order('started_at', { ascending: false })
+      .limit(50);
+
+    if (error){
+      console.error('Error fetching calls:', error);
+      lastErrors.calls = error.message || error.code || 'unknown error';
+      updateStaleBanner();
+      return;
+    }
+    lastErrors.calls = null;
+    if (!data || data.length === 0) { updateStaleBanner(); return; }
+
+    liveCallsRaw = data;
+
+    const outcomeMap = {
+      booked: { label: 'Booked', cls: 'booked' },
+      cancelled: { label: 'Cancelled', cls: 'cancelled' },
+      rescheduled: { label: 'Rescheduled', cls: 'rescheduled' },
+      followup: { label: 'Inquiry', cls: 'followup' },
+      voicemail: { label: 'Voicemail', cls: 'voicemail' },
+      no_action: { label: 'Hung Up', cls: 'voicemail' },
+      escalated: { label: 'Escalated', cls: 'cancelled' }
+    };
+
+    const mapped = data.map(row => {
+      const started = new Date(row.started_at);
+      const mins = Math.floor((row.duration_seconds || 0) / 60);
+      const secs = (row.duration_seconds || 0) % 60;
+      const outcomeInfo = outcomeMap[row.outcome] || { label: row.outcome || 'Unknown', cls: 'voicemail' };
+      return {
+        name: row.caller_name || 'Unknown Caller',
+        sub: row.caller_phone || '',
+        time: started.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }),
+        dur: `${mins}:${secs.toString().padStart(2,'0')}`,
+        type: row.call_type || 'General Inquiry',
+        outcome: outcomeInfo.label,
+        cls: outcomeInfo.cls
+      };
+    });
+    usingLiveCalls = true;
+    updateStaleBanner();
+    renderCalls(mapped);
+    updateKpisAndChart();
+  }
+
+  // ---------------------------------------------------------------
+  // Live leads from Supabase
+  // ---------------------------------------------------------------
+  async function fetchLeads(){
+    if (!db) { updateStaleBanner(); return; }
+    const { data, error } = await db
+      .from('leads')
+      .select('*')
+      .eq('business_id', BUSINESS_ID)
+      .order('created_at', { ascending: false });
+
+    if (error){
+      console.error('Error fetching leads:', error);
+      lastErrors.leads = error.message || error.code || 'unknown error';
+      updateStaleBanner();
+      return;
+    }
+    lastErrors.leads = null;
+    if (!data || data.length === 0) { updateStaleBanner(); return; }
+
+    liveLeadsRaw = data;
+    usingLiveLeads = true;
+    updateStaleBanner();
+    renderLeadsTable('leads-table-overview', data.slice(0, 5), true);
+    renderLeadsTable('leads-table-full', data, false);
+    updateKpisAndChart();
+  }
+
+  function renderLeadsTable(containerId, leads, compact){
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const colspan = compact ? 3 : 6;
+    if (!leads || leads.length === 0){
+      container.innerHTML = `<tr><td colspan="${colspan}" style="color:var(--muted); padding:16px 10px;">No leads yet.</td></tr>`;
+      return;
+    }
+
+    const stageLabel = { new: 'New', contacted: 'Contacted', booked: 'Booked' };
+
+    container.innerHTML = leads.map(l => {
+      const fullName = (l.name || 'Unknown').trim();
+      const stage = l.stage || 'new';
+      const stageBadge = `<span class="outcome outcome-${stage}">${stageLabel[stage] || stage}</span>`;
+
+      if (compact){
+        return `
+          <tr>
+            <td class="caller">${fullName}</td>
+            <td style="color:var(--muted); font-size:12.5px;">${l.interest || '—'}</td>
+            <td>${stageBadge}</td>
+          </tr>
+        `;
+      }
+
+      const parts = fullName.split(' ');
+      const first = parts[0] || '';
+      const last = parts.slice(1).join(' ') || '';
+      return `
+        <tr>
+          <td class="caller">${first}</td>
+          <td>${last}</td>
+          <td class="mono" style="color:var(--muted); font-size:12.5px;">${l.phone || '—'}</td>
+          <td style="color:var(--muted); font-size:12.5px;">${l.email || '—'}</td>
+          <td>${l.interest || '—'}</td>
+          <td>${stageBadge}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+</script>
+</body>
+</html>

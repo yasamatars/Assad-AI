@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assad AI — AI Voice Agents & Custom CRM Dashboards</title>
+<meta name="description" content="Assad AI builds AI voice agents and the custom CRM dashboards that let you see every call, lead, and outcome in one place.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #08090D;
+    --panel: #101219;
+    --panel-2: #15171F;
+    --line: #23252F;
+    --text: #F2F2F5;
+    --muted: #9497A6;
+    --violet: #3B82F6;
+    --cyan: #22D3EE;
+    --amber: #FFB443;
+    --grad: linear-gradient(120deg, var(--violet), var(--cyan));
+    --radius: 14px;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,h4{ font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  a{ color:inherit; text-decoration:none; }
+  img,svg{ display:block; max-width:100%; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px; }
+  section{ position:relative; }
+
+  /* background ambient glow */
+  .glow{ position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(600px 400px at 15% 0%, rgba(59,130,246,0.16), transparent 60%),
+      radial-gradient(700px 500px at 90% 20%, rgba(34,211,238,0.10), transparent 60%);
+  }
+
+  /* NAV */
+  header{
+    position:sticky; top:0; z-index:50;
+    backdrop-filter: blur(14px);
+    background: rgba(8,9,13,0.72);
+    border-bottom:1px solid var(--line);
+  }
+  nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:1180px; margin:0 auto; flex-wrap:wrap; gap:12px; }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Space Grotesk'; font-weight:700; font-size:18px; }
+  .logo img{ height:28px; width:auto; display:block; }
+  .nav-links{ display:flex; gap:32px; font-size:14px; color:var(--muted); }
+  .nav-links a:hover{ color:var(--text); }
+  .nav-cta{ padding:10px 18px; border-radius:999px; background:var(--grad); color:#08090D; font-weight:600; font-size:14px; cursor:pointer; border:none; font-family:'Inter'; }
+  .nav-cta:hover{ opacity:0.9; }
+  .burger{ display:none; }
+
+  /* HERO */
+  .hero{ padding:96px 0 60px; }
+  .hero-grid{ display:grid; grid-template-columns:1.05fr 0.95fr; gap:56px; align-items:center; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border:1px solid var(--line); border-radius:999px; font-size:12.5px; color:var(--muted); margin-bottom:22px; }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--cyan); box-shadow:0 0 8px var(--cyan); }
+  .hero h1{ font-size:56px; line-height:1.06; font-weight:700; }
+  .hero h1 .grad{ background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero p{ margin-top:22px; font-size:18px; color:var(--muted); max-width:480px; }
+  .hero-actions{ display:flex; gap:14px; margin-top:34px; }
+  .btn{ padding:14px 26px; border-radius:10px; font-weight:600; font-size:15px; display:inline-flex; align-items:center; gap:8px; cursor:pointer; border:none; font-family:'Inter'; }
+  .btn-primary{ background:var(--grad); color:#08090D; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-ghost{ border:1px solid var(--line); color:var(--text); background:transparent; }
+  .btn-ghost:hover{ border-color:#3a3d4d; }
+  .hero-stats{ display:flex; gap:36px; margin-top:48px; }
+  .hero-stats div strong{ display:block; font-family:'Space Grotesk'; font-size:24px; }
+  .hero-stats div span{ font-size:12.5px; color:var(--muted); }
+
+  /* CRM dashboard signature widget */
+  .crm-card{
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:20px;
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.6);
+  }
+  .crm-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .crm-top .dots{ display:flex; gap:6px; }
+  .crm-top .dots span{ width:8px; height:8px; border-radius:50%; background:#3a3d4d; }
+  .crm-top .title{ font-size:12.5px; color:var(--muted); }
+  .crm-title-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .crm-title-row h4{ font-size:15px; }
+  .crm-title-row .live{ font-size:11px; color:var(--cyan); display:flex; align-items:center; gap:5px; }
+  .crm-title-row .live .p{ width:6px; height:6px; border-radius:50%; background:var(--cyan); animation:pulse 1.6s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+
+  .pipeline{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .col{ background:#0C0D13; border:1px solid var(--line); border-radius:12px; padding:10px; min-height:210px; }
+  .col-head{ font-size:11px; color:var(--muted); display:flex; justify-content:space-between; margin-bottom:10px; padding:0 2px; }
+  .col-head .n{ font-family:'JetBrains Mono'; color:var(--text); }
+  .card{
+    background: var(--panel-2); border:1px solid var(--line); border-radius:9px; padding:9px 10px; margin-bottom:8px;
+    font-size:11.5px; transition: transform 0.6s ease, opacity 0.6s ease;
+  }
+  .card .name{ font-weight:600; margin-bottom:3px; }
+  .card .val{ color:var(--cyan); font-family:'JetBrains Mono'; font-size:11px; }
+  .card.won{ border-color: rgba(34,211,238,0.4); }
+
+  .crm-footer{ display:flex; justify-content:space-between; margin-top:16px; padding-top:14px; border-top:1px solid var(--line); font-size:11.5px; color:var(--muted); }
+  .crm-footer strong{ color:var(--text); font-family:'JetBrains Mono'; }
+
+  /* SECTION HEADERS */
+  .section-head{ max-width:560px; margin-bottom:52px; }
+  .section-eyebrow{ font-size:12.5px; color:var(--cyan); font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:12px; }
+  .section-head h2{ font-size:36px; font-weight:700; }
+  .section-head p{ color:var(--muted); margin-top:14px; font-size:16px; }
+
+  /* SERVICES */
+  .services{ padding:100px 0; border-top:1px solid var(--line); }
+  .bento{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .feature{
+    background: var(--panel); border:1px solid var(--line); border-radius:16px; padding:26px;
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+  .feature:hover{ border-color:#3a3d4d; transform:translateY(-3px); }
+  .feature.wide{ grid-column: span 2; }
+  .f-icon{ width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; margin-bottom:18px; background:rgba(139,92,246,0.14); border:1px solid rgba(139,92,246,0.3); }
+  .feature h3{ font-size:18px; margin-bottom:8px; }
+  .feature p{ color:var(--muted); font-size:14.5px; }
+  .tag{ display:inline-block; margin-top:14px; font-size:11px; font-family:'JetBrains Mono'; color:var(--amber); }
+
+  /* mini crm preview inside feature */
+  .mini-pipeline{ display:flex; gap:8px; margin-top:18px; }
+  .mini-col{ flex:1; background:#0C0D13; border:1px solid var(--line); border-radius:8px; padding:8px; }
+  .mini-col .mc-head{ font-size:9.5px; color:var(--muted); margin-bottom:6px; }
+  .mini-bar{ height:5px; border-radius:3px; background:var(--grad); margin-bottom:5px; }
+
+  /* ABOUT */
+  .about{ padding:100px 0; border-top:1px solid var(--line); }
+  .about-grid{ display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
+  .about p{ color:var(--muted); font-size:16px; margin-bottom:16px; }
+  .about-stats{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:28px; }
+  .stat-box{ border:1px solid var(--line); border-radius:12px; padding:18px; background:var(--panel); }
+  .stat-box strong{ display:block; font-family:'Space Grotesk'; font-size:26px; }
+  .stat-box span{ font-size:12.5px; color:var(--muted); }
+  .founder-card{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:32px; text-align:center; }
+  .founder-photo{ width:140px; height:140px; border-radius:50%; object-fit:cover; margin:0 auto 20px; border:2px solid var(--line); }
+  .founder-eyebrow{ font-size:11.5px; color:var(--cyan); font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:10px; }
+  .founder-info h4{ font-size:20px; margin-bottom:4px; }
+  .founder-role{ font-size:13px; color:var(--muted); display:block; margin-bottom:14px; }
+  .founder-info p{ font-size:14.5px; color:var(--muted); }
+
+  /* TESTIMONIALS */
+  .testimonials{ padding:100px 0; border-top:1px solid var(--line); }
+  .t-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .t-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  .t-card p{ font-size:14.5px; color:#D6D7DE; margin-bottom:20px; }
+  .t-person{ display:flex; align-items:center; gap:10px; }
+  .t-avatar{ width:36px; height:36px; border-radius:50%; background:var(--grad); }
+  .t-person strong{ display:block; font-size:13.5px; }
+  .t-person span{ font-size:12px; color:var(--muted); }
+  .stars{ color:var(--amber); font-size:13px; margin-bottom:12px; letter-spacing:2px; }
+
+  /* FAQ */
+  .faq{ padding:100px 0; border-top:1px solid var(--line); }
+  .faq-list{ max-width:760px; }
+  .faq-item{ border-bottom:1px solid var(--line); padding:22px 0; cursor:pointer; }
+  .faq-q{ display:flex; justify-content:space-between; align-items:center; font-size:16px; font-weight:600; }
+  .faq-q .icon{ font-size:20px; color:var(--muted); transition:transform 0.25s ease; }
+  .faq-item.open .faq-q .icon{ transform:rotate(45deg); color:var(--cyan); }
+  .faq-a{ max-height:0; overflow:hidden; transition:max-height 0.3s ease; }
+  .faq-item.open .faq-a{ max-height:200px; margin-top:12px; }
+  .faq-a p{ color:var(--muted); font-size:14.5px; }
+
+  /* CONTACT */
+  .contact{ padding:100px 0; border-top:1px solid var(--line); }
+  .contact-grid{ display:grid; grid-template-columns:1fr; gap:56px; max-width:560px; margin:0 auto; text-align:left; }
+  .contact-info h2{ font-size:34px; margin-bottom:16px; }
+  .contact-info p{ color:var(--muted); font-size:15.5px; margin-bottom:28px; }
+  .info-row{ display:flex; gap:12px; align-items:center; margin-bottom:16px; font-size:14.5px; }
+  .info-row .ic{ width:34px; height:34px; border-radius:9px; background:var(--panel); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--cyan); flex-shrink:0; }
+  form{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:28px; }
+  .form-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  label{ display:block; font-size:12.5px; color:var(--muted); margin-bottom:7px; }
+  input, textarea, select{
+    width:100%; background:#0C0D13; border:1px solid var(--line); border-radius:9px; padding:12px 13px;
+    color:var(--text); font-family:'Inter'; font-size:14px; outline:none; transition:border-color 0.2s ease;
+  }
+  input:focus, textarea:focus, select:focus{ border-color:var(--cyan); }
+  .full{ margin-bottom:14px; }
+  textarea{ resize:vertical; min-height:100px; }
+  .submit-btn{ width:100%; padding:14px; border:none; border-radius:10px; background:var(--grad); color:#08090D; font-weight:700; font-size:15px; cursor:pointer; margin-top:6px; }
+  .submit-btn:hover{ filter:brightness(1.08); }
+  .form-note{ font-size:11.5px; color:var(--muted); margin-top:12px; text-align:center; }
+
+  /* FOOTER */
+  footer{ padding:44px 0; border-top:1px solid var(--line); }
+  .footer-row{ display:flex; justify-content:center; align-items:center; text-align:center; }
+  .footer-links{ display:flex; gap:24px; font-size:13.5px; color:var(--muted); }
+  .footer-links a:hover{ color:var(--text); }
+  .copyright{ font-size:13px; color:var(--muted); }
+
+  /* reveal on scroll */
+  .reveal{ opacity:0; transform:translateY(16px); transition:opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  /* BOOKING MODAL */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:200;
+    background:rgba(4,5,8,0.72);
+    backdrop-filter: blur(6px);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    overflow-y:auto;
+    padding:60px 20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{
+    width:100%; max-width:560px;
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:32px;
+    position:relative;
+    box-shadow: 0 40px 100px -20px rgba(0,0,0,0.7);
+    animation: modalIn 0.25s ease;
+  }
+  .modal-box.wide{ max-width:760px; padding:20px; }
+  @keyframes modalIn{ from{opacity:0; transform:translateY(12px) scale(0.98);} to{opacity:1; transform:translateY(0) scale(1);} }
+  .modal-close{
+    position:absolute; top:18px; right:18px; width:32px; height:32px; border-radius:9px;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--muted);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px;
+  }
+  .modal-close:hover{ color:var(--text); border-color:#3a3d4d; }
+  .modal-eyebrow{ font-size:12px; color:var(--cyan); font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px; }
+  .modal-box h3{ font-size:24px; margin-bottom:8px; padding-right:30px; }
+  .modal-box > p.modal-sub{ color:var(--muted); font-size:14.5px; margin-bottom:24px; }
+  .modal-step{ display:none; }
+  .modal-step.active{ display:block; }
+  .cal-wrap{ border-radius:12px; overflow:hidden; border:1px solid var(--line); background:#fff; }
+  .cal-wrap iframe{ width:100%; height:640px; border:none; display:block; }
+  .cal-loading{ padding:60px 20px; text-align:center; color:var(--muted); font-size:14px; }
+  .modal-confirm{ font-size:13.5px; color:var(--cyan); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .modal-confirm .p{ width:6px; height:6px; border-radius:50%; background:var(--cyan); }
+
+  /* LOGIN MODAL specifics */
+  .login-field{ margin-bottom:18px; }
+  .login-row-between{ display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+  .login-remember{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--muted); cursor:pointer; user-select:none; }
+  .login-remember input{ width:15px; height:15px; accent-color:var(--cyan); cursor:pointer; }
+  .login-error-banner{
+    display:none; align-items:center; gap:8px; background:rgba(251,113,133,0.08); border:1px solid rgba(251,113,133,0.35);
+    color:#FB7185; font-size:13px; padding:11px 14px; border-radius:9px; margin-bottom:18px;
+  }
+  .login-error-banner.show{ display:flex; }
+  input.login-error{ border-color:#FB7185; }
+  .login-spinner{ width:15px; height:15px; border:2px solid rgba(8,9,13,0.3); border-top-color:#08090D; border-radius:50%; display:none; animation:spin 0.7s linear infinite; }
+  .login-spinner.show{ display:inline-block; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .login-divider{ display:flex; align-items:center; gap:14px; margin:22px 0 16px; color:var(--muted); font-size:12px; }
+  .login-divider::before, .login-divider::after{ content:''; flex:1; height:1px; background:var(--line); }
+  .login-footnote{ text-align:center; font-size:13.5px; color:var(--muted); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+
+  @media (max-width: 900px){
+    .hero-grid, .about-grid, .contact-grid{ grid-template-columns:1fr; }
+    .crm-card{ display:none; }
+    .bento{ grid-template-columns:1fr; }
+    .feature.wide{ grid-column:span 1; }
+    .t-grid{ grid-template-columns:1fr; }
+    .hero{ padding:64px 0 40px; }
+    .hero h1{ font-size:38px; }
+    .hero p{ max-width:100%; }
+    .hero-actions{ flex-direction:column; align-items:stretch; }
+    .hero-actions .btn{ justify-content:center; width:100%; }
+    .hero-stats{ flex-wrap:wrap; gap:24px; }
+    .team{ grid-template-columns:1fr; }
+    .form-row{ grid-template-columns:1fr; }
+    .section-head h2{ font-size:28px; }
+    .modal-box{ padding:24px; }
+    .cal-wrap iframe{ height:560px; }
+  }
+
+  @media (max-width: 640px){
+    nav{ padding:14px 16px; }
+    .logo{ font-size:16px; }
+    .nav-cta{ padding:9px 14px; font-size:13px; }
+    .wrap{ padding:0 18px; }
+    .hero h1{ font-size:32px; }
+    .eyebrow{ font-size:11.5px; }
+    .crm-card{ padding:16px; }
+    .pipeline{ grid-template-columns:1fr; gap:10px; }
+    .col{ padding:10px; min-height:auto; }
+    .col-head{ font-size:12px; }
+    .card{ padding:8px 10px; font-size:12px; }
+    .crm-title-row{ flex-wrap:wrap; gap:6px; }
+    .crm-footer{ flex-direction:column; align-items:flex-start; gap:6px; }
+    .modal-overlay{ padding:24px 12px; }
+    .modal-box{ padding:20px; }
+    .modal-box.wide{ padding:14px; }
+    .cal-wrap iframe{ height:500px; }
+    .form-row{ gap:10px; }
+  }
+
+  @media (max-width: 420px){
+    .hero-stats{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .cal-wrap iframe{ height:440px; }
+  }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<header>
+  <nav>
+    <div class="logo"><img src="Images/logo4.png" alt="Assad AI logo">Assad AI</div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="nav-cta" data-open-login style="background:transparent; border:1px solid var(--line); color:var(--text);">Log in</button>
+      <button class="nav-cta" data-open-booking>Book a call</button>
+    </div>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow"><span class="dot"></span> AI voice agents for growing businesses</div>
+      <h1>Scale your business <span class="grad">without</span> scaling your headcount.</h1>
+      <p>Assad AI builds AI voice agents that answer every call, qualify every lead, and book every meeting — while a custom CRM dashboard shows you exactly what's happening, in real time.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" data-open-booking>Book a free strategy call →</button>
+        <a href="#services" class="btn btn-ghost">See what we build</a>
+      </div>
+      <div class="hero-stats">
+        <div><strong class="mono">24/7</strong><span>Calls answered instantly</span></div>
+        <div><strong class="mono">&lt;2s</strong><span>Avg. response time</span></div>
+        <div><strong class="mono">98%</strong><span>Client retention</span></div>
+      </div>
+    </div>
+
+    <div class="crm-card reveal">
+      <div class="crm-top">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="title mono">assad-crm.app/pipeline</div>
+      </div>
+      <div class="crm-title-row">
+        <h4>Sales Pipeline</h4>
+        <div class="live"><span class="p"></span>Live</div>
+      </div>
+      <div class="pipeline" id="pipeline">
+        <div class="col">
+          <div class="col-head"><span>New Lead</span><span class="n" id="count-0">0</span></div>
+          <div id="col-0"></div>
+        </div>
+        <div class="col">
+          <div class="col-head"><span>Contacted</span><span class="n" id="count-1">0</span></div>
+          <div id="col-1"></div>
+        </div>
+        <div class="col">
+          <div class="col-head"><span>Booked</span><span class="n" id="count-2">0</span></div>
+          <div id="col-2"></div>
+        </div>
+      </div>
+      <div class="crm-footer">
+        <span>Pipeline value <strong id="pipeline-value" class="mono">$0</strong></span>
+        <span>Updated <strong>just now</strong></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="services" id="services">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">Services</div>
+      <h2>Built to never miss a call</h2>
+      <p>Every engagement starts with your call flow, not a script template. We map where leads go quiet, then put a voice agent there.</p>
+    </div>
+
+    <div class="bento">
+      <div class="feature wide reveal">
+        <div class="f-icon">◎</div>
+        <h3>AI voice agents</h3>
+        <p>A voice agent trained on how your business actually talks to leads — answering inbound calls, qualifying prospects, and booking meetings 24/7. No hold music, no missed calls, no lead going cold overnight.</p>
+        <div class="mini-pipeline">
+          <div class="mini-col"><div class="mc-head">New</div><div class="mini-bar" style="width:70%"></div><div class="mini-bar" style="width:40%"></div></div>
+          <div class="mini-col"><div class="mc-head">Contacted</div><div class="mini-bar" style="width:55%"></div><div class="mini-bar" style="width:80%"></div></div>
+          <div class="mini-col"><div class="mc-head">Booked</div><div class="mini-bar" style="width:90%"></div></div>
+        </div>
+        <span class="tag">FLAGSHIP BUILD</span>
+      </div>
+
+      <div class="feature reveal">
+        <div class="f-icon">▦</div>
+        <h3>Custom CRM dashboard</h3>
+        <p>Every call, transcript, and outcome lands in one dashboard built around your pipeline — so you can see exactly what your voice agent is doing, live.</p>
+      </div>
+
+      <div class="feature reveal">
+        <div class="f-icon">⚡</div>
+        <h3>Workflow automation</h3>
+        <p>Connect the tools you already use so leads, invoices, and follow-ups move themselves — no manual data entry.</p>
+      </div>
+
+      <div class="feature reveal">
+        <div class="f-icon">▤</div>
+        <h3>Reporting & analytics</h3>
+        <p>Live dashboards that turn call activity into the three numbers your leadership team actually checks each morning.</p>
+      </div>
+
+      <div class="feature reveal">
+        <div class="f-icon">⇄</div>
+        <h3>System integrations</h3>
+        <p>We connect your voice agent, CRM, calendar, and inbox so data moves between them without a human in the loop.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="about" id="about">
+  <div class="wrap about-grid">
+    <div class="reveal">
+      <div class="section-eyebrow">About Assad AI</div>
+      <h2 style="font-size:34px;">We build the voice, you run the business.</h2>
+      <p>Assad AI is a small team of voice AI engineers and CRM builders. We work with founders and operators who are tired of missed calls and cold leads — and want a system that answers instantly and shows them everything that happened.</p>
+      <p>Every project ships with a custom dashboard your team can read at a glance, and a voice agent running quietly in the background handling the calls.</p>
+      <div class="about-stats">
+        <div class="stat-box"><strong class="mono">1–2 wks</strong><span>Typical build time</span></div>
+        <div class="stat-box"><strong class="mono">15+</strong><span>Industries served</span></div>
+      </div>
+    </div>
+    <div class="founder-card reveal">
+      <img src="Images/founder.jpeg" alt="Founder of Assad AI" class="founder-photo">
+      <div class="founder-info">
+        <span class="founder-eyebrow">Meet the founder</span>
+        <h4>Younis Assad</h4>
+        <span class="founder-role">Founder of Assad AI</span>
+        <p>I started Assad AI because I was tired of watching great businesses lose leads to a ringing phone. Every voice agent we build is one I'd trust to answer my own calls.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="testimonials" id="testimonials">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">Results</div>
+      <h2>What clients say</h2>
+    </div>
+    <div class="t-grid">
+      <div class="t-card reveal">
+        <div class="stars">★★★★★</div>
+        <p>We used to lose leads every time a call went to voicemail. Now the agent picks up on the first ring and the CRM shows me exactly what was said.</p>
+        <div class="t-person"><div class="t-avatar"></div><div><strong>Dana P.</strong><span>Operations Director, Realty Group</span></div></div>
+      </div>
+      <div class="t-card reveal">
+        <div class="stars">★★★★★</div>
+        <p>We cut lead response time from hours to seconds without hiring a single new rep. The voice agent just runs.</p>
+        <div class="t-person"><div class="t-avatar"></div><div><strong>Marcus T.</strong><span>Founder, HomeServe Co.</span></div></div>
+      </div>
+      <div class="t-card reveal">
+        <div class="stars">★★★★★</div>
+        <p>They actually listened to how our calls really go instead of selling us a generic script. Worth every dollar.</p>
+        <div class="t-person"><div class="t-avatar"></div><div><strong>Priya N.</strong><span>COO, Clearline Consulting</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="faq" id="faq">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">FAQ</div>
+      <h2>Questions, answered</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item reveal">
+        <div class="faq-q">What does the AI voice agent sound like? <span class="icon">+</span></div>
+        <div class="faq-a"><p>Natural and conversational, trained on your business's tone and common questions. Most callers don't realize they're talking to an AI until you tell them.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">What happens if the agent can't handle a question? <span class="icon">+</span></div>
+        <div class="faq-a"><p>It hands the call off to your team with full context — no dead air, no lost lead, and a note in the CRM so nothing falls through.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">What shows up in my CRM dashboard? <span class="icon">+</span></div>
+        <div class="faq-a"><p>Every call, transcript, and outcome — organized into the pipeline stages your team already uses, with live reporting on the numbers you care about.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">How long does a typical build take? <span class="icon">+</span></div>
+        <div class="faq-a"><p>Most engagements run 1–2 weeks from kickoff to launch, depending on how many systems we're connecting and how custom the dashboard needs to be.</p></div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">How much does a project cost? <span class="icon">+</span></div>
+        <div class="faq-a"><p>It depends on scope. Book a free strategy call and we'll give you a fixed quote after understanding your call volume and workflow — no surprise hours billed.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <div class="copyright">© 2026 Assad AI. All rights reserved.</div>
+  </div>
+</footer>
+
+<!-- BOOKING MODAL -->
+<div class="modal-overlay" id="booking-overlay">
+  <div class="modal-box" id="booking-modal-box">
+    <div class="modal-close" id="booking-close">✕</div>
+
+    <!-- Step 1: Details form -->
+    <div class="modal-step active" id="booking-step-form">
+      <div class="modal-eyebrow">Book a call</div>
+      <h3>Tell us a bit about you</h3>
+      <p class="modal-sub">We'll use this to prep before the call — then you'll pick a time that works for you.</p>
+      <form id="booking-form">
+        <div class="form-row">
+          <div><label for="b-fname">First name</label><input id="b-fname" type="text" placeholder="Jordan" required></div>
+          <div><label for="b-lname">Last name</label><input id="b-lname" type="text" placeholder="Lee" required></div>
+        </div>
+        <div class="full"><label for="b-email">Email</label><input id="b-email" type="email" placeholder="jordan@company.com" required></div>
+        <div class="full"><label for="b-phone">Phone number</label><input id="b-phone" type="tel" placeholder="(555) 000-0000" required></div>
+        <div class="full"><label for="b-company">Company</label><input id="b-company" type="text" placeholder="Your business name"></div>
+        <div class="full"><label for="b-msg">Tell us about your call volume</label><textarea id="b-msg" placeholder="How many calls is your team missing right now?"></textarea></div>
+        <button type="submit" class="submit-btn">Continue to scheduling →</button>
+      </form>
+    </div>
+
+    <!-- Step 2: Cal.com scheduling -->
+    <div class="modal-step" id="booking-step-cal">
+      <div class="modal-eyebrow">Book a call</div>
+      <h3>Pick a time</h3>
+      <div class="modal-confirm"><span class="p"></span><span id="booking-confirm-text">Thanks! Choose a slot below to lock in your call.</span></div>
+      <div class="cal-wrap">
+        <div class="cal-loading" id="cal-loading">Loading calendar…</div>
+        <div id="cal-inline" style="width:100%; min-height:640px; display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="login-overlay">
+  <div class="modal-box" id="login-modal-box">
+    <div class="modal-close" id="login-close">✕</div>
+
+    <div class="modal-eyebrow">Client Portal</div>
+    <h3>Welcome back</h3>
+    <p class="modal-sub">Log in to access your dashboard.</p>
+
+    <div class="login-error-banner" id="login-error-banner">⚠ Invalid email or password. Please try again.</div>
+
+    <form id="login-form" novalidate>
+      <div class="login-field">
+        <label for="login-email">Email address</label>
+        <input id="login-email" type="email" placeholder="you@company.com" autocomplete="username" required>
+      </div>
+      <div class="login-field">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+
+      <div class="login-row-between">
+        <label class="login-remember"><input type="checkbox" id="login-remember"> Remember me</label>
+      </div>
+
+      <button type="submit" class="submit-btn" id="login-submit-btn">
+        <span class="login-spinner" id="login-spinner"></span>
+        <span id="login-btn-text">Log in</span>
+      </button>
+    </form>
+
+    <div class="login-divider">NEED ACCESS?</div>
+    <p class="login-footnote">Client accounts are set up by our team. If you don't have login details yet, <button type="button" id="login-need-access" style="background:none;border:none;padding:0;color:var(--cyan);cursor:pointer;font:inherit;text-decoration:underline;">book a call</button> with us.</p>
+  </div>
+</div>
+
+<script>
+  // FAQ accordion
+  document.querySelectorAll('.faq-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+      if(!isOpen) item.classList.add('open');
+    });
+  });
+
+  // Scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, { threshold:0.12 });
+  revealEls.forEach(el=>io.observe(el));
+
+  // ---------- BOOKING MODAL LOGIC ----------
+  const overlay = document.getElementById('booking-overlay');
+  const modalBox = document.getElementById('booking-modal-box');
+  const stepForm = document.getElementById('booking-step-form');
+  const stepCal = document.getElementById('booking-step-cal');
+  const bookingForm = document.getElementById('booking-form');
+  const calContainer = document.getElementById('cal-inline');
+  const calLoading = document.getElementById('cal-loading');
+  const confirmText = document.getElementById('booking-confirm-text');
+  let calInitialized = false;
+
+  // Cal.com official embed loader snippet (namespace: "assad-ai")
+  (function (C, A, L) {
+    let p = function (a, ar) { a.q.push(ar); };
+    let d = C.document;
+    C.Cal = C.Cal || function () {
+      let cal = C.Cal;
+      let ar = arguments;
+      if (!cal.loaded) {
+        cal.ns = {};
+        cal.q = cal.q || [];
+        d.head.appendChild(d.createElement("script")).src = A;
+        cal.loaded = true;
+      }
+      if (ar[0] === L) {
+        const api = function () { p(api, arguments); };
+        const namespace = ar[1];
+        api.q = api.q || [];
+        if (typeof namespace === "string") {
+          cal.ns[namespace] = cal.ns[namespace] || api;
+          p(cal.ns[namespace], ar);
+          p(cal, ["initNamespace", namespace]);
+        } else p(cal, ar);
+        return;
+      }
+      p(cal, ar);
+    };
+  })(window, "https://app.cal.com/embed/embed.js", "init");
+
+  Cal("init", "assad-ai", { origin: "https://cal.com" });
+
+  function openBooking(){
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // reset to step 1 each time it's opened fresh
+    stepForm.classList.add('active');
+    stepCal.classList.remove('active');
+    modalBox.classList.remove('wide');
+  }
+
+  function closeBooking(){
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('[data-open-booking]').forEach(el=>{
+    el.addEventListener('click', openBooking);
+  });
+
+  document.getElementById('booking-close').addEventListener('click', closeBooking);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeBooking(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && overlay.classList.contains('open')) closeBooking(); });
+
+  bookingForm.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    const fname = document.getElementById('b-fname').value.trim();
+    const lname = document.getElementById('b-lname').value.trim();
+    const email = document.getElementById('b-email').value.trim();
+    const phone = document.getElementById('b-phone').value.trim();
+
+    confirmText.textContent = `Thanks, ${fname}! Choose a slot below to lock in your call.`;
+
+    // Save this booking-intent as an agency lead
+    authClient.from('agency_leads').insert({
+      first_name: fname,
+      last_name: lname,
+      email: email,
+      phone: phone,
+      company: document.getElementById('b-company').value.trim(),
+      message: document.getElementById('b-msg').value.trim(),
+      status: 'new',
+      source: 'form'
+    }).then(({ error }) => { if (error) console.error('agency_leads insert error:', error); });
+
+    // Switch to calendar step
+    stepForm.classList.remove('active');
+    stepCal.classList.add('active');
+    modalBox.classList.add('wide');
+
+    // Initialize the Cal.com inline embed only once, prefilling name/email/notes
+    if(!calInitialized){
+      calInitialized = true;
+
+      // TODO: replace "your-cal-username/your-event-type" below with your real Cal.com
+      // link (format: username/event-slug) or the booking form will not load a real calendar.
+      Cal.ns["assad-ai"]("inline", {
+        elementOrSelector: "#cal-inline",
+        calLink: "younis-yasamatars-assad-adamwh/assad-ai",
+        config: {
+          layout: "month_view",
+          name: `${fname} ${lname}`.trim(),
+          email: email,
+          smsReminderNumber: phone,
+          notes: document.getElementById('b-msg').value.trim()
+        }
+      });
+
+      Cal.ns["assad-ai"]("ui", { hideEventTypeDetails: false, layout: "month_view" });
+
+      // Cal.com's iframe fires its own 'load' once the app boots inside it
+      const watchForIframe = setInterval(()=>{
+        const frame = calContainer.querySelector('iframe');
+        if(frame){
+          clearInterval(watchForIframe);
+          frame.addEventListener('load', ()=>{
+            calLoading.style.display = 'none';
+            calContainer.style.display = 'block';
+          });
+        }
+      }, 150);
+    }
+  });
+
+  // ---------- LOGIN MODAL LOGIC ----------
+  const loginOverlay = document.getElementById('login-overlay');
+  const loginForm = document.getElementById('login-form');
+  const loginEmail = document.getElementById('login-email');
+  const loginPassword = document.getElementById('login-password');
+  const loginErrorBanner = document.getElementById('login-error-banner');
+  const loginSubmitBtn = document.getElementById('login-submit-btn');
+  const loginSpinner = document.getElementById('login-spinner');
+  const loginBtnText = document.getElementById('login-btn-text');
+
+  function openLogin(){
+    loginOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLogin(){
+    loginOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('[data-open-login]').forEach(el=>{
+    el.addEventListener('click', handleLoginClick);
+  });
+
+  async function handleLoginClick(){
+    if(!authClient){ openLogin(); return; }
+    const { data } = await authClient.auth.getSession();
+    if(data && data.session){
+      window.location.href = 'teeth.html';
+    } else {
+      openLogin();
+    }
+  }
+  document.getElementById('login-close').addEventListener('click', closeLogin);
+  loginOverlay.addEventListener('click', (e)=>{ if(e.target === loginOverlay) closeLogin(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && loginOverlay.classList.contains('open')) closeLogin(); });
+
+  function showLoginError(message){
+    loginErrorBanner.textContent = '⚠ ' + message;
+    loginErrorBanner.classList.add('show');
+    loginEmail.classList.add('login-error');
+    loginPassword.classList.add('login-error');
+  }
+  function clearLoginError(){
+    loginErrorBanner.classList.remove('show');
+    loginEmail.classList.remove('login-error');
+    loginPassword.classList.remove('login-error');
+  }
+
+const SUPABASE_URL = 'https://dtgcxbhapodafbxmusdt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_V70w3BqFn2evhko4Z9WAKg_x_0kaGJr';
+const authClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function checkCredentials(email, password){
+  const { data, error } = await authClient.auth.signInWithPassword({ email, password });
+  if (error || !data.session) return { success: false };
+
+  console.log('Logged in user ID:', data.session.user.id);
+
+  const { data: profile, error: profileError } = await authClient
+    .from('profiles')
+    .select('role')
+    .eq('id', data.session.user.id)
+    .single();
+
+  console.log('Profile lookup result:', profile, profileError);
+
+  const redirect = profile && profile.role === 'admin' ? 'admin.html' : 'teeth.html';
+  return { success: true, redirect };
+}
+
+  loginForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    clearLoginError();
+
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value;
+
+    if(!email || !password){
+      showLoginError('Please enter both your email and password.');
+      return;
+    }
+
+    loginSubmitBtn.disabled = true;
+    loginSpinner.classList.add('show');
+    loginBtnText.textContent = 'Logging in…';
+
+    const result = await checkCredentials(email, password);
+
+    loginSpinner.classList.remove('show');
+    loginSubmitBtn.disabled = false;
+
+if(result.success){
+  loginBtnText.textContent = 'Success ✓';
+window.location.href = result.redirect;
+} else {
+      loginBtnText.textContent = 'Log in';
+      showLoginError('This demo isn\'t connected to a backend yet — hook up checkCredentials() to your auth API.');
+    }
+  });
+
+  document.getElementById('login-need-access').addEventListener('click', function(){
+    closeLogin();
+    openBooking();
+  });
+
+  // Live CRM pipeline animation (signature widget)
+  const leads = ['Nova Retail','BrightPath','Kestrel Co','Marlow Inc','Fenwick Labs','Orbit Group','Halcyon LLC','Ridgeline','Vantage Rd','Solene & Co'];
+  const values = ()=> '$' + (Math.floor(Math.random()*18)+3) + ',' + (Math.floor(Math.random()*9))+ (Math.floor(Math.random()*9)) + '0';
+  let state = [[],[],[]];
+  const maxPerCol = 3;
+
+  function renderCol(i){
+    const el = document.getElementById('col-'+i);
+    el.innerHTML = state[i].map(c=>`<div class="card ${i===2?'won':''}"><div class="name">${c.name}</div><div class="val">${c.val}</div></div>`).join('');
+    document.getElementById('count-'+i).textContent = state[i].length;
+  }
+
+  function updatePipelineValue(){
+    let total = 0;
+    state.forEach(col=>col.forEach(c=>{ total += parseInt(c.val.replace(/[$,]/g,'')); }));
+    document.getElementById('pipeline-value').textContent = '$' + total.toLocaleString();
+  }
+
+  function tick(){
+    const roll = Math.random();
+    if(roll < 0.5 && state[0].length < maxPerCol){
+      state[0].unshift({ name: leads[Math.floor(Math.random()*leads.length)], val: values() });
+      if(state[0].length > maxPerCol) state[0].pop();
+    } else if(state[0].length > 0){
+      const moved = state[0].pop();
+      state[1].unshift(moved);
+      if(state[1].length > maxPerCol) state[1].pop();
+    } else if(state[1].length > 0){
+      const moved = state[1].pop();
+      state[2].unshift(moved);
+      if(state[2].length > maxPerCol) state[2].pop();
+    }
+    renderCol(0); renderCol(1); renderCol(2);
+    updatePipelineValue();
+  }
+
+  // seed
+  state[0] = [{name:leads[0], val: values()}];
+  state[1] = [{name:leads[1], val: values()}];
+  state[2] = [{name:leads[2], val: values()}];
+  renderCol(0); renderCol(1); renderCol(2); updatePipelineValue();
+  setInterval(tick, 2400);
+</script>
+
+</body>
+</html>

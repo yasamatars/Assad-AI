@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assad AI — Agency Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#08090D; --panel:#101219; --panel-2:#15171F; --line:#23252F;
+    --text:#F2F2F5; --muted:#9497A6;
+    --violet:#3B82F6; --cyan:#22D3EE; --amber:#FFB443; --rose:#FB7185; --green:#34D399;
+    --grad:linear-gradient(120deg,var(--violet),var(--cyan));
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:inherit;}
+  .glow{position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:radial-gradient(600px 400px at 10% 0%,rgba(59,130,246,.14),transparent 60%),
+               radial-gradient(700px 500px at 95% 10%,rgba(34,211,238,.09),transparent 60%);}
+
+  /* GATE */
+  #auth-gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;flex-direction:column;gap:14px;}
+  #auth-gate .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #auth-gate p{color:var(--muted);font-size:13.5px;}
+  #auth-gate .denied{display:none;text-align:center;max-width:380px;}
+  #auth-gate .denied h3{margin-bottom:8px;}
+  #auth-gate .denied p{margin-bottom:18px;}
+  #auth-gate .denied button{padding:10px 20px;border-radius:9px;border:none;background:var(--grad);color:#08090D;font-weight:700;cursor:pointer;}
+
+  .app-shell{display:none;min-height:100vh;}
+  .app-shell.ready{display:flex;}
+
+  /* SIDEBAR */
+  .sidebar{width:236px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;}
+  .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 22px;border-bottom:1px solid var(--line);margin-bottom:18px;}
+  .brand-mark{width:34px;height:34px;border-radius:9px;object-fit:cover;flex-shrink:0;}
+  .brand-name{font-family:'Space Grotesk';font-weight:700;font-size:14.5px;line-height:1.2;}
+  .brand-sub{font-size:11px;color:var(--muted);}
+  .side-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:0 10px;margin:14px 0 8px;}
+  .side-label:first-of-type{margin-top:0;}
+  .side-nav{display:flex;flex-direction:column;gap:2px;}
+  .side-item{display:flex;align-items:center;gap:11px;padding:10px;border-radius:9px;font-size:13.5px;color:var(--muted);cursor:pointer;border:1px solid transparent;background:none;width:100%;text-align:left;font-family:'Inter';}
+  .side-item .ic{width:18px;text-align:center;font-size:14px;flex-shrink:0;}
+  .side-item:hover{color:var(--text);background:var(--panel-2);}
+  .side-item.active{color:var(--text);background:var(--panel-2);border-color:var(--line);}
+  .side-item.active .ic{color:var(--cyan);}
+  .sidebar-footer{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);}
+  .logout-btn{width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:'Inter';font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .logout-btn:hover{border-color:#3a3d4d;}
+  .menu-toggle{display:none;margin-left:auto;width:38px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:17px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;}
+
+  /* MAIN */
+  .main-col{flex:1;min-width:0;}
+  .topbar{position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);background:rgba(8,9,13,.78);border-bottom:1px solid var(--line);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .whoami{font-size:12.5px;color:var(--muted);}
+  .live-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--line);border-radius:999px;font-size:12.5px;color:var(--muted);}
+  .live-pill .p{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  main{padding:28px 32px 64px;max-width:1240px;}
+  .view{display:none;}
+  .view.active{display:block;}
+  .view-head{margin-bottom:24px;}
+  .view-head h1{font-size:24px;}
+  .view-head p{color:var(--muted);font-size:14px;margin-top:4px;}
+
+  /* KPI */
+  .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px;}
+  .kpi-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;}
+  .kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .kpi-icon{width:34px;height:34px;border-radius:9px;background:rgba(139,92,246,.14);border:1px solid rgba(139,92,246,.3);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .kpi-value{font-family:'Space Grotesk';font-size:26px;font-weight:700;}
+  .kpi-label{font-size:12.5px;color:var(--muted);margin-top:4px;}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px;}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;}
+  .panel-head h3{font-size:15.5px;}
+  .panel-head span{font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono';}
+
+  .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{width:100%;border-collapse:collapse;min-width:520px;}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:0 10px 10px;font-weight:600;}
+  td{padding:12px 10px;font-size:13.5px;border-top:1px solid var(--line);}
+  tr:hover td{background:rgba(255,255,255,.015);}
+  .name-cell{font-weight:600;}
+  .sub-cell{font-size:11.5px;color:var(--muted);}
+
+  .badge{font-size:11px;padding:4px 10px;border-radius:999px;font-family:'JetBrains Mono';display:inline-block;border:1px solid var(--line);}
+  .badge-active,.badge-paid,.badge-booked{background:rgba(34,211,238,.12);color:var(--cyan);border-color:rgba(34,211,238,.3);}
+  .badge-paused,.badge-pending,.badge-rescheduled{background:rgba(255,180,67,.12);color:var(--amber);border-color:rgba(255,180,67,.3);}
+  .badge-churned,.badge-cancelled,.badge-failed{background:rgba(251,113,133,.12);color:var(--rose);border-color:rgba(251,113,133,.3);}
+  .badge-building,.badge-new{background:rgba(139,92,246,.12);color:var(--violet);border-color:rgba(139,92,246,.3);}
+  .badge-contacted{background:rgba(255,180,67,.12);color:var(--amber);border-color:rgba(255,180,67,.3);}
+
+  .open-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:12px;cursor:pointer;font-family:'Inter';white-space:nowrap;}
+  .open-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .open-btn[disabled]{opacity:.4;cursor:not-allowed;}
+
+  .empty-state{padding:40px 16px;text-align:center;color:var(--muted);font-size:13.5px;}
+  .empty-state .hint{font-size:11.5px;margin-top:6px;font-family:'JetBrains Mono';color:#5c5f6e;}
+
+  /* Revenue extras */
+  .stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
+  .stat-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;}
+  .stat-box strong{display:block;font-family:'Space Grotesk';font-size:22px;}
+  .stat-box span{font-size:12px;color:var(--muted);}
+
+  /* Calendar (reuses teeth.html pattern) */
+  .calendar-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .calendar-nav-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--panel-2);color:var(--text);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+  .calendar-nav-btn:hover{background:#1c1e28;border-color:#3a3d4d;}
+  .calendar-month-label{font-family:'Space Grotesk';font-weight:700;font-size:18px;}
+  .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .calendar-dow{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center;padding:10px 0;background:#0C0D13;border-bottom:1px solid var(--line);border-right:1px solid var(--line);}
+  .calendar-dow:last-child{border-right:none;}
+  .calendar-day{background:var(--panel);border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-height:100px;padding:6px;display:flex;flex-direction:column;gap:3px;}
+  .calendar-day:nth-child(7n){border-right:none;}
+  .calendar-day.empty{background:#0a0b10;}
+  .calendar-daynum{font-family:'Space Grotesk';font-size:12.5px;color:var(--muted);font-weight:600;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+  .calendar-day.today .calendar-daynum{background:var(--cyan);color:#08090D;font-weight:700;}
+  .calendar-event{font-size:10.5px;padding:3px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--cyan);background:rgba(34,211,238,.14);color:var(--cyan);font-weight:500;}
+  .calendar-more{font-size:10px;color:var(--muted);padding:2px 6px;}
+
+  /* Day view popup */
+  .day-view-overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:20px;}
+  .day-view-overlay.show{display:flex;}
+  .day-view-modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;}
+  .day-view-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);flex-shrink:0;}
+  .day-view-header h3{font-size:16px;}
+  .day-view-close{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .day-view-close:hover{background:var(--panel-2);color:var(--text);}
+  .day-view-body{overflow-y:auto;padding:4px 0;}
+  .day-view-hour{display:flex;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line);min-height:44px;}
+  .day-view-hour .hour-label{width:56px;flex-shrink:0;font-size:11px;color:var(--muted);font-family:'JetBrains Mono';padding-top:2px;}
+  .day-view-hour .hour-events{flex:1;display:flex;flex-direction:column;gap:6px;}
+  .day-view-event{font-size:12.5px;padding:6px 10px;border-radius:7px;font-weight:500;display:flex;align-items:center;gap:8px;background:rgba(34,211,238,.14);color:var(--cyan);}
+  .day-view-empty{padding:30px 20px;text-align:center;color:var(--muted);font-size:13px;}
+
+  /* Appointment list (matches teeth.html) */
+  .appt-list{display:flex;flex-direction:column;gap:10px;}
+  .appt-row{display:flex;align-items:center;gap:12px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#0C0D13;}
+  .appt-date{width:46px;text-align:center;flex-shrink:0;}
+  .appt-date .d{font-family:'Space Grotesk';font-weight:700;font-size:17px;line-height:1;}
+  .appt-date .m{font-size:10px;color:var(--muted);text-transform:uppercase;}
+  .appt-info{flex:1;min-width:0;}
+  .appt-info .n{font-size:13.5px;font-weight:600;}
+  .appt-info .t{font-size:11.5px;color:var(--muted);}
+
+  /* Settings */
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:640px;}
+  .settings-grid .field{background:#0C0D13;border:1px solid var(--line);border-radius:9px;padding:11px 12px;}
+  .settings-grid .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .settings-grid .field div{font-size:13.5px;}
+
+  .stale-banner{display:none;align-items:center;gap:8px;background:rgba(255,180,67,.08);border:1px solid rgba(255,180,67,.35);color:var(--amber);font-size:12.5px;padding:9px 14px;border-radius:9px;margin-bottom:16px;font-family:'JetBrains Mono';}
+  .stale-banner.show{display:flex;}
+  .stale-banner.is-error{background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.35);color:var(--rose);}
+
+  @media (max-width:1080px){ .kpi-row{grid-template-columns:repeat(3,1fr);} }
+  @media (max-width:960px){
+    .app-shell{flex-direction:column;}
+    .sidebar{width:100%;height:auto;position:sticky;top:0;z-index:40;flex-direction:column;align-items:stretch;padding:12px 14px;}
+    .brand{border-bottom:none;margin-bottom:0;padding:2px 4px;}
+    .menu-toggle{display:flex;}
+    .side-label{display:none;}
+    .side-nav{flex-direction:column;gap:2px;max-height:0;overflow:hidden;opacity:0;transition:max-height .25s ease,opacity .2s ease,margin-top .25s ease;margin-top:0;}
+    .sidebar-footer{max-height:0;overflow:hidden;opacity:0;margin-top:0;padding-top:0;border-top:none;transition:max-height .25s ease,opacity .2s ease,margin-top .25s ease;}
+    .sidebar.nav-open .side-nav{max-height:400px;opacity:1;margin-top:14px;}
+    .sidebar.nav-open .sidebar-footer{max-height:80px;opacity:1;margin-top:10px;padding-top:12px;border-top:1px solid var(--line);}
+    main{padding:20px 16px 48px;}
+    .topbar{padding:12px 16px;}
+    .kpi-row{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .stat-strip,.settings-grid{grid-template-columns:1fr;}
+    table{min-width:0;}
+    th,td{padding:8px 6px;font-size:12px;}
+  }
+  @media (max-width:560px){ .kpi-row{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<!-- AUTH GATE -->
+<div id="auth-gate">
+  <div class="spinner" id="gate-spinner"></div>
+  <p id="gate-msg">Checking your access…</p>
+  <div class="denied" id="gate-denied">
+    <h3>Admin access required</h3>
+    <p>This account isn't set up as an agency admin, or you're not logged in.</p>
+    <button onclick="window.location.href='AssadAI.html'">Go to login</button>
+  </div>
+</div>
+
+<div class="app-shell" id="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+  <img src="Images/logo4.png" alt="Logo" class="brand-mark">
+  <div>
+    <div class="brand-name">Assad AI</div>
+    <div class="brand-sub">Agency Admin</div>
+  </div>
+  <button class="menu-toggle" id="menu-toggle-btn" aria-label="Open menu">☰</button>
+</div>
+
+    <div class="side-label">Agency</div>
+    <nav class="side-nav" id="side-nav">
+      <button class="side-item active" data-view="overview"><span class="ic">▦</span>Overview</button>
+      <button class="side-item" data-view="clients"><span class="ic">◎</span>Clients</button>
+      <button class="side-item" data-view="agents"><span class="ic">◈</span>AI Agents</button>
+      <button class="side-item" data-view="appointments"><span class="ic">📅</span>Appointments</button>
+      <button class="side-item" data-view="leads"><span class="ic">✎</span>Leads</button>
+      <button class="side-item" data-view="revenue"><span class="ic">£</span>Revenue</button>
+      <button class="side-item" data-view="calendar"><span class="ic">🗓</span>Calendar</button>
+      <button class="side-item" data-view="settings"><span class="ic">⚙</span>Settings</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="logout-btn" id="logout-btn">↩ Log out</button>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <div class="topbar">
+      <span class="whoami mono" id="whoami-label"></span>
+      <div class="live-pill"><span class="p"></span>Live Supabase data</div>
+    </div>
+
+    <main>
+      <div class="stale-banner" id="stale-banner"></div>
+
+      <!-- OVERVIEW -->
+      <section class="view active" id="view-overview">
+        <div class="view-head"><h1>Agency Overview</h1><p>Everything happening across all your clients, in one place.</p></div>
+        <div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon">◎</div></div><div class="kpi-value mono" id="kpi-clients">–</div><div class="kpi-label">Total clients</div></div>
+          <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon">◈</div></div><div class="kpi-value mono" id="kpi-agents">–</div><div class="kpi-label">Active AI agents</div></div>
+          <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon">£</div></div><div class="kpi-value mono" id="kpi-revenue">–</div><div class="kpi-label">Monthly revenue</div></div>
+          <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon">✎</div></div><div class="kpi-value mono" id="kpi-leads">–</div><div class="kpi-label">Total leads</div></div>
+          <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon">📅</div></div><div class="kpi-value mono" id="kpi-appts">–</div><div class="kpi-label">Total appointments</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Clients</h3><span>ALL BUSINESSES</span></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Business</th><th>Plan</th><th>Monthly</th><th>Status</th><th>Agent</th><th></th></tr></thead>
+            <tbody id="clients-table-overview"></tbody>
+          </table></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Recent leads</h3><span>ACROSS ALL CLIENTS</span></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Name</th><th>Company</th><th>Message</th><th>Status</th></tr></thead>
+            <tbody id="leads-table-overview"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- CLIENTS -->
+      <section class="view" id="view-clients">
+        <div class="view-head"><h1>Clients</h1><p>Every business you run an AI agent for.</p></div>
+        <div class="panel">
+          <div class="panel-head"><h3>All clients</h3><span id="clients-count-label"></span></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Business</th><th>Plan</th><th>Monthly price</th><th>Status</th><th>AI agent</th><th></th></tr></thead>
+            <tbody id="clients-table-full"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- AI AGENTS -->
+      <section class="view" id="view-agents">
+        <div class="view-head"><h1>AI Agents</h1><p>Every voice agent currently deployed for a client.</p></div>
+        <div class="panel">
+          <div class="panel-head"><h3>All agents</h3><span id="agents-count-label"></span></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Client</th><th>Agent ID</th><th>Phone number</th><th>Model</th><th>Status</th></tr></thead>
+            <tbody id="agents-table-full"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- APPOINTMENTS -->
+      <section class="view" id="view-appointments">
+        <div class="view-head"><h1>Appointments</h1><p>Upcoming appointments booked by an AI agent, across all clients.</p></div>
+        <div class="panel">
+          <div class="panel-head"><h3>Upcoming appointments</h3><span id="appts-count-label"></span></div>
+          <div class="appt-list" id="appt-list-full"></div>
+        </div>
+      </section>
+
+      <!-- LEADS -->
+      <section class="view" id="view-leads">
+        <div class="view-head"><h1>Leads</h1><p>Leads captured by every client's AI agent, and website booking-form leads.</p></div>
+        <div class="panel">
+          <div class="panel-head"><h3>All leads</h3><span id="leads-count-label"></span></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Name</th><th>Company</th><th>Phone</th><th>Email</th><th>Source</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="leads-table-full"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- REVENUE -->
+      <section class="view" id="view-revenue">
+        <div class="view-head"><h1>Revenue</h1><p>Recurring revenue and payment history across your agency.</p></div>
+        <div class="stat-strip">
+          <div class="stat-box"><strong class="mono" id="rev-monthly">–</strong><span>Monthly recurring revenue</span></div>
+          <div class="stat-box"><strong class="mono" id="rev-total-payments">–</strong><span>Total payments received</span></div>
+          <div class="stat-box"><strong class="mono" id="rev-avg-client">–</strong><span>Avg. revenue per client</span></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Revenue per client</h3><span>MONTHLY</span></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Business</th><th>Plan</th><th>Monthly price</th><th>Status</th></tr></thead>
+            <tbody id="revenue-per-client"></tbody>
+          </table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Payment history</h3><span id="payments-count-label"></span></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Business</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="payments-table-full"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- CALENDAR -->
+      <section class="view" id="view-calendar">
+        <div class="view-head"><h1>Calendar</h1><p>Month view of every booked appointment, across all clients.</p></div>
+        <div class="panel calendar-wrap">
+          <div class="calendar-nav">
+            <button class="calendar-nav-btn" id="cal-prev-btn">‹</button>
+            <span class="calendar-month-label" id="calendar-month-label"></span>
+            <button class="calendar-nav-btn" id="cal-next-btn">›</button>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+
+        <div class="day-view-overlay" id="day-view-overlay" onclick="closeDayView(event)">
+          <div class="day-view-modal" onclick="event.stopPropagation()">
+            <div class="day-view-header">
+              <h3 id="day-view-title"></h3>
+              <button class="day-view-close" onclick="closeDayView()">✕</button>
+            </div>
+            <div class="day-view-body" id="day-view-body"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" id="view-settings">
+        <div class="view-head"><h1>Settings</h1><p>Your admin account.</p></div>
+        <div class="panel">
+          <div class="panel-head"><h3>Account</h3></div>
+          <div class="settings-grid">
+            <div class="field"><label>Email</label><div id="settings-email">–</div></div>
+            <div class="field"><label>Role</label><div id="settings-role">–</div></div>
+            <div class="field"><label>User ID</label><div class="mono" id="settings-uid" style="font-size:11.5px; word-break:break-all;">–</div></div>
+            <div class="field"><label>Supabase project</label><div class="mono" style="font-size:11.5px;" id="settings-project">–</div></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // =================================================================
+  // Supabase setup — same project as your client dashboards.
+  // =================================================================
+  const SUPABASE_URL = 'https://dtgcxbhapodafbxmusdt.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_V70w3BqFn2evhko4Z9WAKg_x_0kaGJr';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  document.getElementById('settings-project').textContent = SUPABASE_URL.replace('https://','');
+
+  // Cache so multiple views can reuse one fetch
+  let cache = { clients: null, leads: null, appointments: null, agents: null, payments: null };
+  const lastErrors = {};
+
+  // -----------------------------------------------------------------
+  // AUTH GATE — only role='admin' gets in
+  // -----------------------------------------------------------------
+  async function initGate(){
+    const { data: { session } } = await db.auth.getSession();
+    if (!session){
+      showDenied();
+      return;
+    }
+    const user = session.user;
+    const { data: profile, error } = await db
+      .from('profiles')
+      .select('role, business_id')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !profile || profile.role !== 'admin'){
+      showDenied();
+      return;
+    }
+
+    document.getElementById('whoami-label').textContent = user.email || 'Admin';
+    document.getElementById('settings-email').textContent = user.email || '–';
+    document.getElementById('settings-role').textContent = profile.role;
+    document.getElementById('settings-uid').textContent = user.id;
+
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app-shell').classList.add('ready');
+    loadAll();
+  }
+
+  function showDenied(){
+    document.getElementById('gate-spinner').style.display = 'none';
+    document.getElementById('gate-msg').style.display = 'none';
+    document.getElementById('gate-denied').style.display = 'block';
+  }
+
+  initGate();
+  setInterval(fetchAppointments, 60000);
+
+  document.getElementById('logout-btn').addEventListener('click', async ()=>{
+    await db.auth.signOut();
+    window.location.href = 'AssadAI.html';
+  });
+
+  // -----------------------------------------------------------------
+  // Nav
+  // -----------------------------------------------------------------
+  const sidebarEl = document.querySelector('.sidebar');
+  document.getElementById('menu-toggle-btn').addEventListener('click', ()=>{
+    sidebarEl.classList.toggle('nav-open');
+  });
+  document.querySelectorAll('.side-item[data-view]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.side-item[data-view]').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('view-'+btn.dataset.view).classList.add('active');
+      sidebarEl.classList.remove('nav-open');
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+
+  // -----------------------------------------------------------------
+  // Banner
+  // -----------------------------------------------------------------
+  function showBanner(){
+    const banner = document.getElementById('stale-banner');
+    const entries = Object.entries(lastErrors).filter(([,e])=>e);
+    if (entries.length === 0){ banner.classList.remove('show'); return; }
+    banner.textContent = '⚠ ' + entries.map(([t,e])=>`${t}: ${e}`).join(' · ');
+    banner.classList.add('show', 'is-error');
+  }
+
+  function money(n){
+    const v = Number(n || 0);
+    return '£' + v.toLocaleString(undefined, {maximumFractionDigits:0});
+  }
+  function fmtDate(d){
+    if(!d) return '–';
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return d;
+    return dt.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+  }
+  function esc(s){
+    return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function badge(status){
+    const s = (status||'unknown').toLowerCase().replace(/[^a-z]/g,'');
+    return `<span class="badge badge-${s}">${esc(status||'Unknown')}</span>`;
+  }
+
+  // -----------------------------------------------------------------
+  // Fetchers — every one hits Supabase directly, no fake data
+  // -----------------------------------------------------------------
+  async function loadAll(){
+    await Promise.all([
+      fetchClients(),
+      fetchLeads(),
+      fetchAppointments(),
+      fetchAgents(),
+      fetchPayments()
+    ]);
+    await syncAppointmentsToLeads();
+    renderOverview();
+    renderCalendar();
+    showBanner();
+  }
+
+  async function fetchClients(){
+    const { data, error } = await db.from('businesses').select('*').order('name', {ascending:true});
+    if (error){ lastErrors.clients = error.message; return; }
+    lastErrors.clients = null;
+    cache.clients = data || [];
+    renderClientsTable('clients-table-overview', cache.clients.slice(0,6));
+    renderClientsTable('clients-table-full', cache.clients);
+    document.getElementById('clients-count-label').textContent = `${cache.clients.length} TOTAL`;
+  }
+
+  async function fetchLeads(){
+    const { data, error } = await db
+      .from('agency_leads')
+      .select('*')
+      .order('created_at', {ascending:false});
+    if (error){ lastErrors.leads = error.message; return; }
+    lastErrors.leads = null;
+    cache.leads = data || [];
+    renderLeadsTable('leads-table-overview', cache.leads.slice(0,6), true);
+    renderLeadsTable('leads-table-full', cache.leads, false);
+    document.getElementById('leads-count-label').textContent = `${cache.leads.length} TOTAL`;
+  }
+
+const CAL_API_KEY = 'cal_live_f8038645a2099758be32c137605c6238';
+  const CAL_EVENT_TYPE_ID = 6468151;
+
+  // Standard Cal.com booking-field keys that are NOT the custom
+  // "Company" field. Anything left over in bookingFieldsResponses
+  // after these are excluded is treated as the company value.
+  const CAL_KNOWN_FIELDS = new Set([
+    'email','name','guests','location','displayEmail',
+    'displayGuests','smsReminderNumber','notes','rescheduleReason',
+    'phone','phoneNumber','attendeePhoneNumber','attendee_phone_number',
+    'phone-number','contactNumber','contact-number','mobile','mobileNumber'
+  ]);
+const PHONE_FIELD_KEYS = [
+    'phone','phoneNumber','attendeePhoneNumber','attendee_phone_number',
+    'phone-number','contactNumber','contact-number','mobile','mobileNumber','smsReminderNumber'
+  ];
+
+  function extractPhone(booking){
+    const fieldResponses = booking && booking.bookingFieldsResponses;
+    const unwrap = (v) => {
+      if (v == null) return '';
+      if (typeof v === 'string') return v.trim();
+      if (typeof v === 'object'){
+        if (typeof v.value === 'string') return v.value.trim();
+        if (typeof v.label === 'string') return v.label.trim();
+      }
+      return '';
+    };
+
+    if (fieldResponses){
+      for (const key of PHONE_FIELD_KEYS){
+        const v = unwrap(fieldResponses[key]);
+        if (v) return v;
+      }
+      const phoneKey = Object.keys(fieldResponses).find(k =>
+        k.toLowerCase().includes('phone') && unwrap(fieldResponses[k])
+      );
+      if (phoneKey) return unwrap(fieldResponses[phoneKey]);
+    }
+
+    const attendee = (booking && booking.attendees && booking.attendees[0]) || {};
+    if (attendee.phoneNumber) return String(attendee.phoneNumber).trim();
+
+    return '';
+  }
+  // Belt-and-braces guard: even if a phone field slips through under an
+  // unrecognized key, don't treat a value that's essentially all digits
+  // as a company name.
+  function looksLikePhoneNumber(v){
+    if (typeof v !== 'string') return false;
+    const trimmed = v.trim();
+    if (!trimmed) return false;
+    const digitsOnly = trimmed.replace(/[\s()+\-.]/g, '');
+    return /^\d+$/.test(digitsOnly) && digitsOnly.length >= 6;
+  }
+
+  function extractCompany(booking){
+    const fieldResponses = booking && booking.bookingFieldsResponses;
+
+    const unwrap = (v) => {
+      if (v == null) return '';
+      if (typeof v === 'string') return v.trim();
+      if (Array.isArray(v)) return v.filter(x => typeof x === 'string').join(', ');
+      if (typeof v === 'object'){
+        if (typeof v.value === 'string') return v.value.trim();
+        if (typeof v.label === 'string') return v.label.trim();
+      }
+      return '';
+    };
+
+    if (fieldResponses){
+      const direct =
+        fieldResponses.company ||
+        fieldResponses.companyName ||
+        fieldResponses['company-name'] ||
+        fieldResponses['Company'] ||
+        fieldResponses.title ||
+        '';
+      const directStr = unwrap(direct);
+      if (directStr && !looksLikePhoneNumber(directStr)) return directStr;
+
+      const companyKey = Object.keys(fieldResponses).find(k => {
+        const v = unwrap(fieldResponses[k]);
+        return k.toLowerCase().includes('compan') && v && !looksLikePhoneNumber(v);
+      });
+      if (companyKey) return unwrap(fieldResponses[companyKey]);
+
+      const extraKey = Object.keys(fieldResponses).find(k => {
+        const v = unwrap(fieldResponses[k]);
+        return !CAL_KNOWN_FIELDS.has(k) && v && !looksLikePhoneNumber(v);
+      });
+      if (extraKey) return unwrap(fieldResponses[extraKey]);
+    }
+
+    const topLevelTitle = booking && typeof booking.title === 'string' ? booking.title.trim() : '';
+    if (topLevelTitle && !looksLikePhoneNumber(topLevelTitle)) return topLevelTitle;
+
+    return '';
+  }
+
+  async function fetchAppointments(){
+    try {
+      const res = await fetch(
+        `https://api.cal.com/v2/bookings?eventTypeId=${CAL_EVENT_TYPE_ID}&take=100`,
+        {
+          headers: {
+            'Authorization': `Bearer ${CAL_API_KEY}`,
+            'cal-api-version': '2024-08-13'
+          }
+        }
+      );
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`Cal.com API error ${res.status}: ${errBody}`);
+      }
+      const json = await res.json();
+const bookings = json.data || [];
+
+
+      const now = new Date();
+      cache.appointments = bookings
+        .map(b => {
+          const attendee = (b.attendees && b.attendees[0]) || {};
+          const start = b.start ? new Date(b.start) : null;
+          const statusMap = { accepted: 'booked', cancelled: 'cancelled', rescheduled: 'rescheduled', pending: 'booked' };
+          const company = extractCompany(b);
+          const phone = extractPhone(b);
+          return {
+            cal_booking_uid: b.uid,
+            name: attendee.name || b.title || 'Unknown',
+            email: attendee.email || '',
+            company,
+            phone,
+            start,
+            appointment_date: start ? start.toISOString().slice(0,10) : null,
+            appointment_time: start ? start.toISOString().slice(11,19) : null,
+            status: statusMap[b.status] || b.status || 'booked'
+          };
+        })
+        .filter(a => a.start && a.start >= now && a.status !== 'cancelled')
+        .sort((a,b) => a.start - b.start);
+
+      lastErrors.appointments = null;
+    } catch (err){
+      console.error('Error fetching Cal.com bookings:', err);
+      lastErrors.appointments = err.message;
+      cache.appointments = cache.appointments || [];
+    }
+    renderAppointmentsTable();
+    document.getElementById('appts-count-label').textContent = `${cache.appointments.length} TOTAL`;
+    await syncAppointmentsToLeads();
+  }
+
+  async function syncAppointmentsToLeads(){
+    if (!cache.leads || !cache.appointments) return;
+
+    const byEmail = new Map(
+      cache.leads
+        .filter(l => l.email)
+        .map(l => [l.email.toLowerCase(), l])
+    );
+
+    const newBookers = [];
+    const fieldUpdates = [];
+
+    cache.appointments.forEach(a => {
+      if (!a.email) return;
+      const key = a.email.toLowerCase();
+      const existing = byEmail.get(key);
+      if (!existing){
+        newBookers.push(a);
+      } else {
+        // Lead already existed (e.g. from a form) — backfill anything
+        // missing, and mark them as having actually booked.
+        const patch = {};
+        if (a.company && !existing.company) patch.company = a.company;
+        if (a.phone && !existing.phone) patch.phone = a.phone;
+        if (existing.source !== 'booking') patch.source = 'booking';
+        if (Object.keys(patch).length){
+          fieldUpdates.push({ id: existing.id, patch });
+        }
+      }
+    });
+
+    if (fieldUpdates.length){
+      await Promise.all(fieldUpdates.map(u =>
+        db.from('agency_leads').update(u.patch).eq('id', u.id)
+      ));
+      fieldUpdates.forEach(u => {
+        const lead = cache.leads.find(l => l.id === u.id);
+        if (lead) Object.assign(lead, u.patch);
+      });
+    }
+
+    if (newBookers.length){
+      const rows = newBookers.map(a => {
+        const parts = (a.name || 'Unknown').trim().split(' ');
+        return {
+          first_name: parts[0] || 'Unknown',
+          last_name: parts.slice(1).join(' ') || '',
+          email: a.email,
+          company: a.company || '',
+          phone: a.phone || '',
+          message: 'Booked an appointment',
+          status: 'new',
+          source: 'booking'
+        };
+      });
+
+      const { data, error } = await db.from('agency_leads').insert(rows).select();
+      if (error){
+        console.error('Error adding new leads from bookings:', error);
+      } else {
+        cache.leads = [...(data || []), ...cache.leads];
+      }
+    }
+
+    if (newBookers.length || fieldUpdates.length){
+      renderLeadsTable('leads-table-overview', cache.leads.slice(0,6), true);
+      renderLeadsTable('leads-table-full', cache.leads, false);
+      document.getElementById('leads-count-label').textContent = `${cache.leads.length} TOTAL`;
+      renderOverview();
+    }
+  }
+
+  async function fetchAgents(){
+    const { data, error } = await db
+      .from('ai_agents')
+      .select('*, businesses(name)')
+      .order('created_at', {ascending:false});
+    if (error){
+      // table may not exist yet if admin-schema.sql hasn't been run
+      lastErrors.ai_agents = error.message.includes('does not exist')
+        ? "ai_agents table not found — run admin-schema.sql"
+        : error.message;
+      cache.agents = [];
+    } else {
+      lastErrors.ai_agents = null;
+      cache.agents = data || [];
+    }
+    renderAgentsTable();
+  }
+
+  async function fetchPayments(){
+    const { data, error } = await db
+      .from('payments')
+      .select('*, businesses(name)')
+      .order('paid_at', {ascending:false});
+    if (error){
+      lastErrors.payments = error.message.includes('does not exist')
+        ? "payments table not found — run admin-schema.sql"
+        : error.message;
+      cache.payments = [];
+    } else {
+      lastErrors.payments = null;
+      cache.payments = data || [];
+    }
+    renderRevenue();
+  }
+
+  // -----------------------------------------------------------------
+  // Renderers
+  // -----------------------------------------------------------------
+  function renderOverview(){
+    const clients = cache.clients || [];
+    const agents = cache.agents || [];
+    const leads = cache.leads || [];
+    const appts = cache.appointments || [];
+
+    document.getElementById('kpi-clients').textContent = clients.length;
+    document.getElementById('kpi-agents').textContent = agents.filter(a=>a.status==='active').length;
+    const mrr = clients.filter(c=>c.status==='active').reduce((s,c)=>s+Number(c.monthly_price||0),0);
+    document.getElementById('kpi-revenue').textContent = money(mrr);
+    document.getElementById('kpi-leads').textContent = leads.length;
+    document.getElementById('kpi-appts').textContent = appts.length;
+  }
+
+  function renderClientsTable(id, rows){
+    const el = document.getElementById(id);
+    if (!rows || rows.length === 0){
+      el.innerHTML = `<tr><td colspan="6" class="empty-state">No clients yet.<div class="hint">Add a row to the "businesses" table in Supabase.</div></td></tr>`;
+      return;
+    }
+    el.innerHTML = rows.map(c => `
+      <tr>
+        <td>
+          <div class="name-cell">${esc(c.name)}</div>
+          <div class="sub-cell">${esc(c.contact_email || c.owner_email || '')}</div>
+        </td>
+        <td>${esc(c.plan || '—')}</td>
+        <td class="mono">${c.monthly_price != null ? money(c.monthly_price) : '—'}</td>
+        <td>${badge(c.status)}</td>
+        <td>${badge(c.ai_agent_status)}</td>
+        <td>${c.dashboard_url
+            ? `<button class="open-btn" onclick="window.open('${esc(c.dashboard_url)}','_blank')">Open Dashboard →</button>`
+            : `<button class="open-btn" disabled>No dashboard set</button>`}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function sourceLabel(l){
+    const isBooked = l.source === 'booking' || l.message === 'Booked an appointment';
+    return isBooked
+      ? `<span class="badge badge-booked">Booked</span>`
+      : `<span class="badge badge-new">Form</span>`;
+  }
+
+  function renderLeadsTable(id, rows, compact){
+    const el = document.getElementById(id);
+    if (!rows || rows.length === 0){
+      el.innerHTML = `<tr><td colspan="${compact?4:7}" class="empty-state">No leads yet.</td></tr>`;
+      return;
+    }
+    el.innerHTML = rows.map(l => {
+      const fullName = `${l.first_name || ''} ${l.last_name || ''}`.trim() || 'Unknown';
+      return `
+      <tr>
+        <td class="name-cell">${esc(fullName)}</td>
+        <td>${esc(l.company || '—')}</td>
+        ${compact
+          ? `<td>${esc(l.message || '—')}</td>`
+          : `<td>${esc(l.phone || '—')}</td><td>${esc(l.email || '—')}</td><td>${sourceLabel(l)}</td>`}
+        <td>${badge(l.status)}</td>
+        ${compact ? '' : `<td>${fmtDate(l.created_at)}</td>`}
+      </tr>
+    `;}).join('');
+  }
+
+  function renderAppointmentsTable(){
+    const el = document.getElementById('appt-list-full');
+    const rows = cache.appointments || [];
+    if (rows.length === 0){
+      el.innerHTML = `<div class="empty-state">No upcoming appointments.</div>`;
+      return;
+    }
+    el.innerHTML = rows.map(a => {
+      const dt = a.start || new Date(`${a.appointment_date}T${a.appointment_time || '00:00'}`);
+      const d = dt.toLocaleDateString('en-US', {day:'2-digit'});
+      const m = dt.toLocaleDateString('en-US', {month:'short'});
+      const time = dt.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+      return `
+        <div class="appt-row">
+          <div class="appt-date"><div class="d">${d}</div><div class="m">${m}</div></div>
+          <div class="appt-info">
+            <div class="n">${esc(a.name || 'Unknown')}</div>
+            <div class="t">${time}${a.email ? ' · ' + esc(a.email) : ''}${a.phone ? ' · ' + esc(a.phone) : ''}${a.company ? ' · ' + esc(a.company) : ''}</div>
+          </div>
+          ${badge(a.status)}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderAgentsTable(){
+    const el = document.getElementById('agents-table-full');
+    const rows = cache.agents || [];
+    document.getElementById('agents-count-label').textContent = `${rows.length} TOTAL`;
+    if (rows.length === 0){
+      el.innerHTML = `<tr><td colspan="5" class="empty-state">No AI agents yet.<div class="hint">${esc(lastErrors.ai_agents || 'Add rows to the "ai_agents" table in Supabase.')}</div></td></tr>`;
+      return;
+    }
+    el.innerHTML = rows.map(a => `
+      <tr>
+        <td class="name-cell">${esc((a.businesses && a.businesses.name) || '—')}</td>
+        <td class="mono">${esc(a.agent_id || '—')}</td>
+        <td class="mono">${esc(a.phone_number || '—')}</td>
+        <td>${esc(a.model || '—')}</td>
+        <td>${badge(a.status)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderRevenue(){
+    const clients = cache.clients || [];
+    const payments = cache.payments || [];
+
+    const mrr = clients.filter(c=>c.status==='active').reduce((s,c)=>s+Number(c.monthly_price||0),0);
+    const totalPaid = payments.filter(p=>p.status==='paid').reduce((s,p)=>s+Number(p.amount||0),0);
+    const activeCount = clients.filter(c=>c.status==='active').length;
+    const avg = activeCount > 0 ? mrr / activeCount : 0;
+
+    document.getElementById('rev-monthly').textContent = money(mrr);
+    document.getElementById('rev-total-payments').textContent = money(totalPaid);
+    document.getElementById('rev-avg-client').textContent = money(avg);
+
+    const perClientEl = document.getElementById('revenue-per-client');
+    if (clients.length === 0){
+      perClientEl.innerHTML = `<tr><td colspan="4" class="empty-state">No clients yet.</td></tr>`;
+    } else {
+      perClientEl.innerHTML = clients.map(c => `
+        <tr>
+          <td class="name-cell">${esc(c.name)}</td>
+          <td>${esc(c.plan || '—')}</td>
+          <td class="mono">${c.monthly_price != null ? money(c.monthly_price) : '—'}</td>
+          <td>${badge(c.status)}</td>
+        </tr>
+      `).join('');
+    }
+
+    const paymentsEl = document.getElementById('payments-table-full');
+    document.getElementById('payments-count-label').textContent = `${payments.length} TOTAL`;
+    if (payments.length === 0){
+      paymentsEl.innerHTML = `<tr><td colspan="4" class="empty-state">No payments logged yet.<div class="hint">${esc(lastErrors.payments || 'Add rows to the "payments" table in Supabase.')}</div></td></tr>`;
+    } else {
+      paymentsEl.innerHTML = payments.map(p => `
+        <tr>
+          <td class="name-cell">${esc((p.businesses && p.businesses.name) || '—')}</td>
+          <td class="mono">${money(p.amount)}</td>
+          <td>${badge(p.status)}</td>
+          <td>${fmtDate(p.paid_at)}</td>
+        </tr>
+      `).join('');
+    }
+  }
+
+  // -----------------------------------------------------------------
+  // Calendar — month grid across all clients
+  // -----------------------------------------------------------------
+  let calendarViewDate = new Date();
+
+  function renderCalendar(){
+    const grid = document.getElementById('calendar-grid');
+    const label = document.getElementById('calendar-month-label');
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    label.textContent = calendarViewDate.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+    const byDate = {};
+    (cache.appointments || []).forEach(a => {
+      if (!a.appointment_date) return;
+      const key = a.appointment_date;
+      (byDate[key] = byDate[key] || []).push(a);
+    });
+
+    const firstOfMonth = new Date(year, month, 1);
+    const startOffset = (firstOfMonth.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayIso = new Date().toISOString().slice(0,10);
+
+    const dowLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    let html = dowLabels.map(d=>`<div class="calendar-dow">${d}</div>`).join('');
+    for (let i=0;i<startOffset;i++) html += `<div class="calendar-day empty"></div>`;
+
+    for (let day=1; day<=daysInMonth; day++){
+      const iso = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const dayAppts = byDate[iso] || [];
+      const isToday = iso === todayIso;
+      const shown = dayAppts.slice(0,3).map(a=>{
+        return `<div class="calendar-event" title="${esc(a.name||'')}">${esc(a.name||'—')}</div>`;
+      }).join('');
+      const more = dayAppts.length > 3 ? `<div class="calendar-more">+${dayAppts.length-3} more</div>` : '';
+      html += `
+        <div class="calendar-day${isToday?' today':''}" style="cursor:pointer;" onclick="openDayView('${iso}')">
+          <div class="calendar-daynum">${day}</div>
+          ${shown}${more}
+        </div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  function openDayView(iso){
+    const dayAppts = (cache.appointments || []).filter(a => a.appointment_date === iso);
+    const dateObj = new Date(iso + 'T00:00:00');
+    document.getElementById('day-view-title').textContent =
+      dateObj.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+    const body = document.getElementById('day-view-body');
+    if (dayAppts.length === 0){
+      body.innerHTML = `<div class="day-view-empty">No appointments booked.</div>`;
+    } else {
+      const bySlot = {};
+      dayAppts.forEach(a => {
+        const [h, m] = (a.appointment_time || '00:00').split(':').map(Number);
+        const slotKey = `${h}:${m < 30 ? '00' : '30'}`;
+        (bySlot[slotKey] = bySlot[slotKey] || []).push(a);
+      });
+      let html = '';
+      Object.keys(bySlot).sort((a,b)=>{
+        const [ah,am]=a.split(':').map(Number), [bh,bm]=b.split(':').map(Number);
+        return ah*60+am - (bh*60+bm);
+      }).forEach(slotKey=>{
+        const [h,m] = slotKey.split(':').map(Number);
+        const displayHour = h % 12 === 0 ? 12 : h % 12;
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const label = `${displayHour}:${m===0?'00':'30'} ${ampm}`;
+        const eventsHtml = bySlot[slotKey].map(a => `<div class="day-view-event">${esc(a.name)} ${badge(a.status)}</div>`).join('');
+        html += `<div class="day-view-hour"><div class="hour-label">${label}</div><div class="hour-events">${eventsHtml}</div></div>`;
+      });
+      body.innerHTML = html || `<div class="day-view-empty">No appointments booked.</div>`;
+    }
+    document.getElementById('day-view-overlay').classList.add('show');
+  }
+
+  function closeDayView(e){
+    if (e && e.target !== document.getElementById('day-view-overlay')) return;
+    document.getElementById('day-view-overlay').classList.remove('show');
+  }
+
+  document.getElementById('cal-prev-btn').addEventListener('click', ()=>{
+    calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth()-1, 1);
+    renderCalendar();
+  });
+  document.getElementById('cal-next-btn').addEventListener('click', ()=>{
+    calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth()+1, 1);
+    renderCalendar();
+  });
+</script>
+</body>
+</html>

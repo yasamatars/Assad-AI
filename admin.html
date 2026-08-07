@@ -194,7 +194,7 @@
   <div class="denied" id="gate-denied">
     <h3>Admin access required</h3>
     <p>This account isn't set up as an agency admin, or you're not logged in.</p>
-    <button onclick="window.location.href='AssadAI.html'">Go to login</button>
+    <button onclick="window.location.href = '/';">Go to login</button>
   </div>
 </div>
 
@@ -429,7 +429,7 @@
 
   document.getElementById('logout-btn').addEventListener('click', async ()=>{
     await db.auth.signOut();
-    window.location.href = 'AssadAI.html';
+    window.location.href = '/';
   });
 
   // -----------------------------------------------------------------

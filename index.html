@@ -745,9 +745,7 @@
       company: document.getElementById('b-company').value.trim(),
       message: document.getElementById('b-msg').value.trim(),
       status: 'new',
-      source: 'form',
-      visitor_uid: window.__aaiVisitorId || null,
-      session_uid: window.__aaiSessionId || null
+      source: 'form'
     }).then(({ error }) => { if (error) console.error('agency_leads insert error:', error); });
 
     // Switch to calendar step
@@ -936,90 +934,6 @@ window.location.href = result.redirect;
   state[2] = [{name:leads[2], val: values()}];
   renderCol(0); renderCol(1); renderCol(2); updatePipelineValue();
   setInterval(tick, 2400);
-</script>
-
-<script>
-  // ---------- ANONYMOUS VISITOR ANALYTICS ----------
-  (function(){
-    function uid(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16);}); }
-
-    let visitorUid = localStorage.getItem('aai_vid');
-    let isNewVisitor = !visitorUid;
-    if(isNewVisitor){ visitorUid = uid(); localStorage.setItem('aai_vid', visitorUid); }
-
-    let sessionUid = sessionStorage.getItem('aai_sid');
-    let isNewSession = !sessionUid;
-    if(isNewSession){ sessionUid = uid(); sessionStorage.setItem('aai_sid', sessionUid); }
-
-    const ua = navigator.userAgent;
-    const device = /Mobi|Android/i.test(ua) ? 'mobile' : /Tablet|iPad/i.test(ua) ? 'tablet' : 'desktop';
-    const browser = ua.includes('Edg/') ? 'Edge' : ua.includes('Chrome/') ? 'Chrome' : (ua.includes('Safari/') && !ua.includes('Chrome')) ? 'Safari' : ua.includes('Firefox/') ? 'Firefox' : 'Other';
-    const os = ua.includes('Windows') ? 'Windows' : ua.includes('Mac OS') ? 'macOS' : ua.includes('Android') ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : ua.includes('Linux') ? 'Linux' : 'Other';
-    const screenSize = `${screen.width}x${screen.height}`;
-
-    const params = new URLSearchParams(location.search);
-    const utm_source = params.get('utm_source'), utm_medium = params.get('utm_medium'),
-          utm_campaign = params.get('utm_campaign'), utm_term = params.get('utm_term'), utm_content = params.get('utm_content');
-
-    const ref = document.referrer;
-    let trafficSource = 'Direct';
-    if(utm_source) trafficSource = utm_source;
-    else if(ref){
-      if(ref.includes('google.')) trafficSource = 'Google';
-      else if(ref.includes('linkedin.')) trafficSource = 'LinkedIn';
-      else if(ref.includes('instagram.')) trafficSource = 'Instagram';
-      else if(ref.includes('facebook.')) trafficSource = 'Facebook';
-      else if(ref.includes('tiktok.')) trafficSource = 'TikTok';
-      else { try{ trafficSource = 'Referral: ' + new URL(ref).hostname; }catch(e){} }
-    }
-
-    const sessionStart = Date.now();
-    const pageCount = parseInt(sessionStorage.getItem('aai_pc') || '0', 10) + 1;
-    sessionStorage.setItem('aai_pc', pageCount);
-
-    async function getLocation(){
-      try{ const r = await fetch('https://ipapi.co/json/'); if(!r.ok) return {}; const d = await r.json(); return { country: d.country_name || null, city: d.city || null }; }
-      catch(e){ return {}; }
-    }
-
-    (async function track(){
-      const loc = await getLocation();
-
-      await authClient.from('visitors').upsert({
-        visitor_uid: visitorUid, last_seen: new Date().toISOString(),
-        country: loc.country, city: loc.city, device, browser, os, screen_size: screenSize
-      }, { onConflict: 'visitor_uid' });
-
-      if(isNewSession){
-        await authClient.from('visitor_sessions').insert({
-          session_uid: sessionUid, visitor_uid: visitorUid,
-          referrer: ref || null, landing_page: location.pathname,
-          traffic_source: trafficSource, utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-          pages_viewed: 1
-        });
-        if(!isNewVisitor){
-          const { data } = await authClient.from('visitors').select('visit_count').eq('visitor_uid', visitorUid).single();
-          if(data) await authClient.from('visitors').update({ visit_count: (data.visit_count || 1) + 1 }).eq('visitor_uid', visitorUid);
-        }
-      } else {
-        await authClient.from('visitor_sessions').update({ last_active: new Date().toISOString(), pages_viewed: pageCount }).eq('session_uid', sessionUid);
-      }
-
-      await authClient.from('page_views').insert({ session_uid: sessionUid, visitor_uid: visitorUid, page: location.pathname });
-    })();
-
-    window.addEventListener('beforeunload', function(){
-      const duration = Math.round((Date.now() - sessionStart) / 1000);
-      fetch(`${SUPABASE_URL}/rest/v1/visitor_sessions?session_uid=eq.${sessionUid}`, {
-        method: 'PATCH', keepalive: true,
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
-        body: JSON.stringify({ duration_seconds: duration, last_active: new Date().toISOString() })
-      }).catch(()=>{});
-    });
-
-    window.__aaiVisitorId = visitorUid;
-    window.__aaiSessionId = sessionUid;
-  })();
 </script>
 
 </body>

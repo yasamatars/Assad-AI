@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root{
     --bg:#08090D; --panel:#101219; --panel-2:#15171F; --line:#23252F;
@@ -219,7 +218,6 @@
       <button class="side-item" data-view="leads"><span class="ic">✎</span>Leads</button>
       <button class="side-item" data-view="revenue"><span class="ic">£</span>Revenue</button>
       <button class="side-item" data-view="calendar"><span class="ic">🗓</span>Calendar</button>
-      <button class="side-item" data-view="analytics"><span class="ic">📈</span>Website Analytics</button>
       <button class="side-item" data-view="settings"><span class="ic">⚙</span>Settings</button>
     </nav>
 
@@ -357,54 +355,6 @@
         </div>
       </section>
 
-      <!-- WEBSITE ANALYTICS -->
-      <section class="view" id="view-analytics">
-        <div class="view-head"><h1>Website Analytics</h1><p>Anonymous visitor tracking for your public site.</p></div>
-
-        <div class="panel" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:14px 18px;">
-          <span style="font-size:12.5px; color:var(--muted); margin-right:4px;">Range:</span>
-          <button class="open-btn analytics-filter active" data-range="1">Today</button>
-          <button class="open-btn analytics-filter" data-range="7">Last 7 days</button>
-          <button class="open-btn analytics-filter" data-range="30">Last 30 days</button>
-          <button class="open-btn analytics-filter" data-range="90">Last 90 days</button>
-          <span style="margin-left:auto; font-size:12px; color:var(--cyan); display:flex; align-items:center; gap:6px;">
-            <span style="width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 1.6s infinite;"></span>
-            <span id="live-visitor-count">0</span> live now
-          </span>
-        </div>
-
-        <div class="kpi-row" id="analytics-kpis">
-          <div class="kpi-card"><div class="kpi-value mono" id="an-total">–</div><div class="kpi-label">Total visitors</div></div>
-          <div class="kpi-card"><div class="kpi-value mono" id="an-unique">–</div><div class="kpi-label">Unique visitors</div></div>
-          <div class="kpi-card"><div class="kpi-value mono" id="an-today">–</div><div class="kpi-label">Visitors today</div></div>
-          <div class="kpi-card"><div class="kpi-value mono" id="an-returning">–</div><div class="kpi-label">Returning visitors</div></div>
-          <div class="kpi-card"><div class="kpi-value mono" id="an-avgdur">–</div><div class="kpi-label">Avg. session</div></div>
-        </div>
-        <div class="kpi-row" style="grid-template-columns:repeat(3,1fr); margin-top:-8px;">
-          <div class="kpi-card"><div class="kpi-value mono" id="an-week">–</div><div class="kpi-label">Visitors this week</div></div>
-          <div class="kpi-card"><div class="kpi-value mono" id="an-month">–</div><div class="kpi-label">Visitors this month</div></div>
-          <div class="kpi-card"><div class="kpi-value mono" id="an-pageviews">–</div><div class="kpi-label">Total page views</div></div>
-        </div>
-
-        <div class="stat-strip" style="grid-template-columns:1fr 1fr;">
-          <div class="panel"><div class="panel-head"><h3>Visitors over time</h3></div><canvas id="chart-timeline" height="140"></canvas></div>
-          <div class="panel"><div class="panel-head"><h3>New vs returning</h3></div><canvas id="chart-newret" height="140"></canvas></div>
-        </div>
-        <div class="stat-strip" style="grid-template-columns:1fr 1fr 1fr;">
-          <div class="panel"><div class="panel-head"><h3>Traffic source</h3></div><canvas id="chart-source" height="160"></canvas></div>
-          <div class="panel"><div class="panel-head"><h3>Device</h3></div><canvas id="chart-device" height="160"></canvas></div>
-          <div class="panel"><div class="panel-head"><h3>Top pages</h3></div><canvas id="chart-pages" height="160"></canvas></div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head"><h3>Visitors</h3><span id="an-visitors-count-label"></span></div>
-          <div class="table-scroll"><table>
-            <thead><tr><th>Visitor</th><th>Location</th><th>Device</th><th>Browser</th><th>Source</th><th>Landing page</th><th>Pages</th><th>First visit</th><th>Last visit</th><th>Type</th></tr></thead>
-            <tbody id="analytics-visitors-table"></tbody>
-          </table></div>
-        </div>
-      </section>
-
       <!-- SETTINGS -->
       <section class="view" id="view-settings">
         <div class="view-head"><h1>Settings</h1><p>Your admin account.</p></div>
@@ -466,8 +416,6 @@
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('app-shell').classList.add('ready');
     loadAll();
-    loadAnalytics();
-    initRealtimeAnalytics();
   }
 
   function showDenied(){
@@ -1078,176 +1026,6 @@ const bookings = json.data || [];
     calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth()+1, 1);
     renderCalendar();
   });
-
-  // ===================================================================
-  // WEBSITE ANALYTICS
-  // ===================================================================
-  let analyticsRangeDays = 1;
-  let charts = {};
-  let analyticsData = { visitors: [], sessions: [], pageViews: [] };
-
-  document.querySelectorAll('.analytics-filter').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.analytics-filter').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      analyticsRangeDays = parseInt(btn.dataset.range, 10);
-      loadAnalytics();
-    });
-  });
-
-  async function loadAnalytics(){
-    const since = new Date(Date.now() - analyticsRangeDays * 86400000).toISOString();
-
-    const [{ data: visitors, error: vErr }, { data: sessions, error: sErr }, { data: pageViews, error: pErr }] = await Promise.all([
-      db.from('visitors').select('*').gte('last_seen', since),
-      db.from('visitor_sessions').select('*').gte('started_at', since),
-      db.from('page_views').select('*').gte('viewed_at', since)
-    ]);
-
-    if (vErr){ lastErrors.visitors = vErr.message; }
-    if (sErr){ lastErrors.visitor_sessions = sErr.message; }
-    if (pErr){ lastErrors.page_views = pErr.message; }
-    showBanner();
-
-    analyticsData.visitors = visitors || [];
-    analyticsData.sessions = sessions || [];
-    analyticsData.pageViews = pageViews || [];
-
-    renderAnalyticsKpis();
-    renderAnalyticsCharts();
-    renderVisitorsTable();
-  }
-
-  function renderAnalyticsKpis(){
-    const { visitors, sessions, pageViews } = analyticsData;
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(now - 7*86400000);
-    const monthStart = new Date(now - 30*86400000);
-
-    document.getElementById('an-total').textContent = sessions.length;
-    document.getElementById('an-unique').textContent = visitors.length;
-    document.getElementById('an-today').textContent = sessions.filter(s=>new Date(s.started_at) >= todayStart).length;
-    document.getElementById('an-week').textContent = sessions.filter(s=>new Date(s.started_at) >= weekStart).length;
-    document.getElementById('an-month').textContent = sessions.filter(s=>new Date(s.started_at) >= monthStart).length;
-    document.getElementById('an-returning').textContent = visitors.filter(v=>v.visit_count > 1).length;
-    document.getElementById('an-pageviews').textContent = pageViews.length;
-
-    const avgSec = sessions.length ? sessions.reduce((s,x)=>s+(x.duration_seconds||0),0) / sessions.length : 0;
-    document.getElementById('an-avgdur').textContent = `${Math.floor(avgSec/60)}m ${Math.round(avgSec%60)}s`;
-  }
-
-  function destroyChart(key){ if(charts[key]){ charts[key].destroy(); delete charts[key]; } }
-
-  function renderAnalyticsCharts(){
-    const { visitors, sessions, pageViews } = analyticsData;
-    const gridColor = '#23252F', textColor = '#9497A6';
-    Chart.defaults.color = textColor;
-    Chart.defaults.borderColor = gridColor;
-
-    // Timeline
-    const byDay = {};
-    sessions.forEach(s=>{ const d = s.started_at.slice(0,10); byDay[d] = (byDay[d]||0)+1; });
-    const days = Object.keys(byDay).sort();
-    destroyChart('timeline');
-    charts.timeline = new Chart(document.getElementById('chart-timeline'), {
-      type: 'line',
-      data: { labels: days, datasets: [{ label: 'Visitors', data: days.map(d=>byDay[d]), borderColor:'#22D3EE', backgroundColor:'rgba(34,211,238,.12)', fill:true, tension:.3 }] },
-      options: { plugins:{legend:{display:false}}, scales:{ x:{grid:{color:gridColor}}, y:{grid:{color:gridColor}, beginAtZero:true } } }
-    });
-
-    // New vs returning
-    const newCount = visitors.filter(v=>v.visit_count <= 1).length;
-    const retCount = visitors.filter(v=>v.visit_count > 1).length;
-    destroyChart('newret');
-    charts.newret = new Chart(document.getElementById('chart-newret'), {
-      type: 'doughnut',
-      data: { labels:['New','Returning'], datasets:[{ data:[newCount, retCount], backgroundColor:['#3B82F6','#22D3EE'] }] },
-      options: { plugins:{legend:{position:'bottom'}} }
-    });
-
-    // Traffic source
-    const bySource = {};
-    sessions.forEach(s=>{ const src = s.traffic_source || 'Direct'; bySource[src] = (bySource[src]||0)+1; });
-    destroyChart('source');
-    charts.source = new Chart(document.getElementById('chart-source'), {
-      type: 'bar',
-      data: { labels: Object.keys(bySource), datasets:[{ data: Object.values(bySource), backgroundColor:'#3B82F6' }] },
-      options: { plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, beginAtZero:true} } }
-    });
-
-    // Device
-    const byDevice = {};
-    visitors.forEach(v=>{ const d = v.device || 'unknown'; byDevice[d] = (byDevice[d]||0)+1; });
-    destroyChart('device');
-    charts.device = new Chart(document.getElementById('chart-device'), {
-      type: 'doughnut',
-      data: { labels: Object.keys(byDevice), datasets:[{ data: Object.values(byDevice), backgroundColor:['#22D3EE','#3B82F6','#FFB443'] }] },
-      options: { plugins:{legend:{position:'bottom'}} }
-    });
-
-    // Top pages
-    const byPage = {};
-    pageViews.forEach(p=>{ byPage[p.page] = (byPage[p.page]||0)+1; });
-    const topPages = Object.entries(byPage).sort((a,b)=>b[1]-a[1]).slice(0,6);
-    destroyChart('pages');
-    charts.pages = new Chart(document.getElementById('chart-pages'), {
-      type: 'bar',
-      data: { labels: topPages.map(p=>p[0]), datasets:[{ data: topPages.map(p=>p[1]), backgroundColor:'#22D3EE' }] },
-      options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{grid:{color:gridColor}, beginAtZero:true}, y:{grid:{display:false}} } }
-    });
-  }
-
-  function renderVisitorsTable(){
-    const { visitors, sessions } = analyticsData;
-    const el = document.getElementById('analytics-visitors-table');
-    document.getElementById('an-visitors-count-label').textContent = `${visitors.length} TOTAL`;
-
-    if (visitors.length === 0){
-      el.innerHTML = `<tr><td colspan="10" class="empty-state">No visitors tracked in this range yet.</td></tr>`;
-      return;
-    }
-
-    el.innerHTML = visitors.map(v=>{
-      const vSessions = sessions.filter(s=>s.visitor_uid === v.visitor_uid);
-      const firstSession = vSessions.sort((a,b)=>new Date(a.started_at)-new Date(b.started_at))[0];
-      const totalPages = vSessions.reduce((s,x)=>s+(x.pages_viewed||1),0);
-      return `
-        <tr>
-          <td class="mono" style="font-size:11px;">${esc(v.visitor_uid.slice(0,8))}…</td>
-          <td>${esc([v.city, v.country].filter(Boolean).join(', ') || '—')}</td>
-          <td>${esc(v.device || '—')}</td>
-          <td>${esc(v.browser || '—')}</td>
-          <td>${esc(firstSession ? firstSession.traffic_source : '—')}</td>
-          <td>${esc(firstSession ? firstSession.landing_page : '—')}</td>
-          <td class="mono">${totalPages}</td>
-          <td>${fmtDate(v.first_seen)}</td>
-          <td>${fmtDate(v.last_seen)}</td>
-          <td>${v.visit_count > 1 ? '<span class="badge badge-active">Returning</span>' : '<span class="badge badge-new">New</span>'}</td>
-        </tr>`;
-    }).join('');
-  }
-
-  // Live visitor count — realtime subscription on new sessions
-  function initRealtimeAnalytics(){
-    db.channel('live-sessions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'visitor_sessions' }, () => {
-        updateLiveCount();
-        loadAnalytics();
-      })
-      .subscribe();
-    updateLiveCount();
-    setInterval(updateLiveCount, 30000);
-  }
-
-  async function updateLiveCount(){
-    const fiveMinAgo = new Date(Date.now() - 5*60000).toISOString();
-    const { data } = await db.from('visitor_sessions').select('session_uid').gte('last_active', fiveMinAgo);
-    document.getElementById('live-visitor-count').textContent = (data || []).length;
-  }
-
-  // Hook into existing nav + auth-gate flow
-  document.querySelector('.side-item[data-view="analytics"]').addEventListener('click', loadAnalytics);
 </script>
 </body>
 </html>

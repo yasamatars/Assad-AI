@@ -853,13 +853,15 @@ async function checkCredentials(email, password){
 
   const { data: profile, error: profileError } = await authClient
     .from('profiles')
-    .select('role')
+    .select('role, dashboard_url')
     .eq('id', data.session.user.id)
     .single();
 
   console.log('Profile lookup result:', profile, profileError);
 
-  const redirect = profile && profile.role === 'admin' ? 'admin.html' : 'teeth.html';
+  if (profileError || !profile) return { success: false };
+
+  const redirect = profile.role === 'admin' ? 'admin.html' : (profile.dashboard_url || 'teeth.html');
   return { success: true, redirect };
 }
 

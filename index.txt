@@ -30,14 +30,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --bg: #08090D;
+    --bg: #000000;
     --panel: #101219;
     --panel-2: #15171F;
     --line: #23252F;
     --text: #F2F2F5;
     --muted: #9497A6;
-    --violet: #3B82F6;
-    --cyan: #22D3EE;
+    --violet: #1E3AE0;
+    --cyan: #1FE0C4;
     --amber: #FFB443;
     --grad: linear-gradient(120deg, var(--violet), var(--cyan));
     --radius: 14px;
@@ -60,11 +60,7 @@
   section{ position:relative; }
 
   /* background ambient glow */
-  .glow{ position:fixed; inset:0; z-index:-1; pointer-events:none;
-    background:
-      radial-gradient(600px 400px at 15% 0%, rgba(59,130,246,0.16), transparent 60%),
-      radial-gradient(700px 500px at 90% 20%, rgba(34,211,238,0.10), transparent 60%);
-  }
+  .glow{ position:fixed; inset:0; z-index:-1; pointer-events:none; background:none; }
 
   /* NAV */
   header{
@@ -91,7 +87,7 @@
   .hero h1 .grad{ background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .hero p{ margin-top:22px; font-size:18px; color:var(--muted); max-width:480px; }
   .hero-actions{ display:flex; gap:14px; margin-top:34px; }
-  .btn{ padding:14px 26px; border-radius:10px; font-weight:600; font-size:15px; display:inline-flex; align-items:center; gap:8px; cursor:pointer; border:none; font-family:'Inter'; }
+  .btn{ padding:14px 26px; border-radius:999px; font-weight:600; font-size:15px; display:inline-flex; align-items:center; gap:8px; cursor:pointer; border:none; font-family:'Inter'; }
   .btn-primary{ background:var(--grad); color:#08090D; }
   .btn-primary:hover{ filter:brightness(1.08); }
   .btn-ghost{ border:1px solid var(--line); color:var(--text); background:transparent; }
@@ -853,13 +849,15 @@ async function checkCredentials(email, password){
 
   const { data: profile, error: profileError } = await authClient
     .from('profiles')
-    .select('role')
+    .select('role, dashboard_url')
     .eq('id', data.session.user.id)
     .single();
 
   console.log('Profile lookup result:', profile, profileError);
 
-  const redirect = profile && profile.role === 'admin' ? 'admin.html' : 'teeth.html';
+  if (profileError || !profile) return { success: false };
+
+  const redirect = profile.role === 'admin' ? 'admin.html' : (profile.dashboard_url || 'teeth.html');
   return { success: true, redirect };
 }
 

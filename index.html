@@ -17,6 +17,7 @@
 <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
 <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>document.documentElement.classList.add('js')</script>
 <style>
 :root{--bg:#000000;--panel:#111214;--line:#23252b;--text:#f4f4f6;--muted:#9a9ca8;--a:#FF5A00;--b:#FF7A1A;--grad:linear-gradient(120deg,#FF5A00,#FF8A1F)}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -88,7 +89,7 @@ footer p+p{margin-top:10px;font-size:12px;max-width:640px;margin-inline:auto}
 .modal h3{font-size:22px;margin-bottom:18px}
 .x{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
 #login-err{display:none;color:#FB7185;font-size:13px;margin-bottom:12px}
-@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.case{grid-template-columns:1fr}.case .face{aspect-ratio:1/1;max-height:340px}}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.case{grid-template-columns:1fr}.case .face{aspect-ratio:auto;max-height:none}}
 @media(max-width:520px){.grid{grid-template-columns:1fr}.hero{padding-top:48px}.track img{height:50px}}
 @media(prefers-reduced-motion:reduce){.track{animation:none}}
 .mark{display:inline-flex;flex-direction:column;gap:3px;width:22px}.mark i{display:block;height:5px;background:#FF6A00}.mark i:nth-child(2){width:68%;margin-left:auto}.word{font-weight:800;letter-spacing:-.03em;color:#FF6A00;font-size:22px;line-height:1}.word sup{font-size:.45em;margin-left:3px;vertical-align:top;position:relative;top:-2px}.book{padding:70px 0 60px;scroll-margin-top:70px}.book .head{text-align:center;margin-bottom:28px}.book h2{font-size:clamp(28px,4vw,40px);margin-top:4px}.book .head p{color:var(--muted);margin-top:8px;max-width:520px;margin-inline:auto}.calwrap{width:100%;max-width:1000px;margin:0 auto 40px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#000}
@@ -102,6 +103,74 @@ body::after{background:radial-gradient(ellipse 70% 45% at 50% -8%,rgba(255,106,0
 .track{gap:20px!important}.track img{height:120px!important;padding:10px!important;border-radius:10px!important}
 @media(max-width:520px){.track img{height:92px!important}}.track img{height:100px!important}@media(max-width:520px){.track img{height:78px!important}}.calwrap{scroll-margin-top:84px}.case .clogo{height:44px;width:auto}.case .face{height:auto}.calendly-inline-widget{width:100%;min-width:0;height:700px}@media(max-width:1000px){.calendly-inline-widget{height:720px}}@media(max-width:700px){.calendly-inline-widget{height:980px}.hero h1{font-size:32px}.sub{font-size:17px}.optin{padding:20px}.book{padding:50px 0 40px}.testi{padding-top:50px}.case{padding:14px}.case .big{font-size:36px}nav{padding:12px 16px}.word{font-size:19px}.btn{white-space:nowrap}}
 .track{gap:0!important;animation:scroll 36s linear infinite!important}.track .set{display:flex;flex-shrink:0;align-items:center}.track img{margin-right:20px;flex-shrink:0}
+
+/* ---------- animations ---------- */
+html.js .hook,
+html.js .case,
+html.js .testi .head,
+html.js .chats h2,
+html.js .chats .lead,
+html.js .shot,
+html.js .book .head,
+html.js .calwrap,
+html.js .optin,
+html.js .trusted p,
+html.js .marquee,
+html.js .cta-end .inner{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1),border-color .25s,box-shadow .25s}
+html.js .hook.in,
+html.js .case.in,
+html.js .testi .head.in,
+html.js .chats h2.in,
+html.js .chats .lead.in,
+html.js .shot.in,
+html.js .book .head.in,
+html.js .calwrap.in,
+html.js .optin.in,
+html.js .trusted p.in,
+html.js .marquee.in,
+html.js .cta-end .inner.in{opacity:1;transform:none}
+html.js .shot:nth-child(2){transition-delay:.1s}html.js .shot:nth-child(3){transition-delay:.2s}html.js .shot:nth-child(4){transition-delay:.3s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.hero .pill,.hero h1,.hero .sub,.hero .stat,.hero .cta{animation:fadeUp .8s cubic-bezier(.2,.7,.2,1) both}
+.hero h1{animation-delay:.1s}.hero .sub{animation-delay:.22s}.hero .stat{animation-delay:.32s}.hero .cta{animation-delay:.42s}
+.btn{transition:transform .2s ease,box-shadow .25s ease,filter .2s ease,border-color .2s ease}
+.btn:hover{transform:translateY(-2px);border-color:#FF6A00}
+.btn.primary:hover{box-shadow:0 10px 28px -8px rgba(255,106,0,.7)}
+.btn:active{transform:translateY(0)}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,106,0,.45)}50%{box-shadow:0 0 0 10px rgba(255,106,0,0)}}
+.hero .cta .btn.primary,.cta-end .btn.primary{animation:glow 2.6s ease-out infinite}
+html.js .case.in:hover{transform:translateY(-4px);border-color:rgba(255,106,0,.45);box-shadow:0 18px 40px -22px rgba(255,106,0,.45)}
+html.js .shot.in:hover{transform:translateY(-4px);border-color:rgba(255,106,0,.4)}
+.case .big{transition:transform .3s ease}.case:hover .big{transform:scale(1.03);transform-origin:left center}
+
+/* ---------- closing call to action ---------- */
+.cta-end{padding:10px 0 70px;text-align:center}
+.cta-end .inner{text-align:center}
+.cta-end .btn{padding:13px 28px;font-size:15px}
+
+/* ---------- smaller images on phones ---------- */
+@media(max-width:700px){
+  .case .face{max-height:none;aspect-ratio:auto;height:auto!important;max-width:320px;margin:0 auto}
+  .case .clogo{height:36px}
+  .grid{grid-template-columns:1fr;justify-items:center;gap:14px}
+  .shot{width:100%;max-width:290px;padding:10px}
+  .cta-end{padding-bottom:56px}
+}
+@media(prefers-reduced-motion:reduce){
+  html.js .hook,
+html.js .case,
+html.js .testi .head,
+html.js .chats h2,
+html.js .chats .lead,
+html.js .shot,
+html.js .book .head,
+html.js .calwrap,
+html.js .optin,
+html.js .trusted p,
+html.js .marquee,
+html.js .cta-end .inner{opacity:1!important;transform:none!important;transition:none!important}
+  .hero .pill,.hero h1,.hero .sub,.hero .stat,.hero .cta,.hero .cta .btn.primary,.cta-end .btn.primary{animation:none!important}
+}
 </style>
 </head>
 <body>
@@ -129,20 +198,24 @@ body::after{background:radial-gradient(ellipse 70% 45% at 50% -8%,rgba(255,106,0
       <img src="Images/logogoing3.jpeg" alt="5 Stars Gas logo">
       <img src="Images/logogoing1.jpeg" alt="FitSom logo">
       <img src="Images/logogoing4.jpeg" alt="Scull Construction logo">
+      <img src="Images/logogoing5.jpeg" alt="Hard Hats Construction logo">
       <img src="Images/logogoing2.jpeg" alt="" aria-hidden="true">
       <img src="Images/logogoing3.jpeg" alt="" aria-hidden="true">
       <img src="Images/logogoing1.jpeg" alt="" aria-hidden="true">
       <img src="Images/logogoing4.jpeg" alt="" aria-hidden="true">
+      <img src="Images/logogoing5.jpeg" alt="" aria-hidden="true">
     </div>
     <div class="set" aria-hidden="true">
-      <img src="Images/logogoing2.jpeg" alt="" aria-hidden="true">
-      <img src="Images/logogoing3.jpeg" alt="" aria-hidden="true">
-      <img src="Images/logogoing1.jpeg" alt="" aria-hidden="true">
-      <img src="Images/logogoing4.jpeg" alt="" aria-hidden="true">
-      <img src="Images/logogoing2.jpeg" alt="" aria-hidden="true">
-      <img src="Images/logogoing3.jpeg" alt="" aria-hidden="true">
-      <img src="Images/logogoing1.jpeg" alt="" aria-hidden="true">
-      <img src="Images/logogoing4.jpeg" alt="" aria-hidden="true">
+      <img src="Images/logogoing2.jpeg" alt="">
+      <img src="Images/logogoing3.jpeg" alt="">
+      <img src="Images/logogoing1.jpeg" alt="">
+      <img src="Images/logogoing4.jpeg" alt="">
+      <img src="Images/logogoing5.jpeg" alt="">
+      <img src="Images/logogoing2.jpeg" alt="">
+      <img src="Images/logogoing3.jpeg" alt="">
+      <img src="Images/logogoing1.jpeg" alt="">
+      <img src="Images/logogoing4.jpeg" alt="">
+      <img src="Images/logogoing5.jpeg" alt="">
     </div>
   </div></div>
 </div></section>
@@ -176,9 +249,9 @@ body::after{background:radial-gradient(ellipse 70% 45% at 50% -8%,rgba(255,106,0
   <div class="case">
     <img class="face" src="Images/owner3.jpeg" alt="Owner of 5 Stars Gas">
     <div>
-      <img class="clogo" src="Images/logogoing3.jpeg" alt="5 Stars Gas logo">
-      <h3>5 Stars Gas</h3>
-      <div class="role">Heating and plumbing</div>
+      <img class="clogo" src="Images/logogoing5.jpeg" alt="5 Stars Gas logo">
+      <h3>Hard Hats Construction</h3>
+      <div class="role">Remodeling & Renovations</div>
       <div class="big">£90,000<small>Generated in His First 4 Weeks</small></div>
     </div>
   </div>
@@ -217,6 +290,9 @@ body::after{background:radial-gradient(ellipse 70% 45% at 50% -8%,rgba(255,106,0
     </div>
   </div>
 </div></section>
+<section class="cta-end"><div class="wrap"><div class="inner">
+  <a class="btn primary" href="#calendar">Book a scaling call</a>
+</div></div></section>
 </main>
 
 <footer><div class="wrap">
@@ -278,6 +354,17 @@ form.addEventListener('submit',async e=>{
     setLoading(false);                      // form keeps what they typed so they can retry
   }
 });
+
+// Reveal-on-scroll animation
+(function(){
+  var sel='.hook,.case,.testi .head,.chats h2,.chats .lead,.shot,.book .head,.calwrap,.optin,.trusted p,.marquee,.cta-end .inner';
+  var els=document.querySelectorAll(sel);
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return}
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target)}});
+  },{threshold:.12,rootMargin:'0px 0px -30px 0px'});
+  els.forEach(function(e){io.observe(e)});
+})();
 </script>
 </body>
 </html>
